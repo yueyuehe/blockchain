@@ -1,0 +1,23 @@
+syntax = "proto3";
+
+option csharp_namespace = "QMBlockClientSDK.Client";
+
+package blockchain;
+
+// The greeting service definition.
+service Tx {
+  //½»Ò×
+  rpc InvokeTx (TxHeader) returns (TxResponse);
+ 
+  //²éÑ¯
+  rpc QueryTx (TxHeader) returns (TxResponse);
+
+}
+
+message TxHeader {
+   	string data = 1;
+}
+
+message TxResponse {
+   	string data = 1;
+}

@@ -1,0 +1,29 @@
+syntax = "proto3";
+
+option csharp_namespace = "QMBlockGrpc.Service";
+
+package blockchain;
+
+// The greeting service definition.
+service Tx {
+  //交易
+  rpc InvokeTx (TxHeader) returns (TxResponse);
+ 
+  //查询
+  rpc QueryTx (TxHeader) returns (TxResponse);
+
+
+  //创建并启动节点
+  rpc InitChannel (TxHeader) returns (TxResponse);
+
+  //加入通道
+  rpc JoinChannel (TxHeader) returns (TxResponse);
+}
+
+message TxHeader {
+   	string data = 1;
+}
+
+message TxResponse {
+   	string data = 1;
+}

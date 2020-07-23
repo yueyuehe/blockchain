@@ -1,0 +1,30 @@
+syntax = "proto3";
+
+option csharp_namespace = "QMRaftCore.Client";
+
+package blockchain;
+
+// The greeting service definition.
+service Net {
+
+  rpc Vote (NetRequest) returns (NetResponse);
+
+  rpc HeartBeat (NetRequest) returns (NetResponse);
+
+  rpc AppendEntries (NetRequest) returns (NetResponse);
+
+  rpc Transaction (NetRequest) returns (NetResponse);
+
+  rpc Endorse (NetRequest) returns (NetResponse);
+
+  rpc BlockHandOut (NetRequest) returns (NetResponse);
+
+}
+
+message NetRequest {
+	string data = 1;
+}
+
+message NetResponse {
+   	string data = 1;
+}

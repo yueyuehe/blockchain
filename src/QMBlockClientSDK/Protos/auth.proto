@@ -1,0 +1,62 @@
+syntax = "proto3";
+
+option csharp_namespace = "QMBlockClientSDK.Client";
+
+package blockchain;
+
+// The greeting service definition.
+service Auth {
+	//获取code 用于签名认证登录
+  rpc GetCode (AuthRequest) returns (AuthReply);
+  //获取token
+  rpc GetToken (AuthRequest) returns (AuthReply);
+
+  rpc RefreshToken (AuthRequest) returns (AuthReply);
+
+  //创建账号
+  rpc GenerateAccount (AccountRequest) returns (AccountReply);
+
+  //注册账号
+  rpc Regist (RegistRequest) returns (RegistReply);
+  
+}
+
+// The request message containing the user's name.
+message AuthRequest {
+  string data = 1;
+  string caNumber = 2;
+}
+
+// The response message containing the greetings.
+message AuthReply {
+  bool status = 1;
+  string code = 2;
+  string token = 3;
+  string msg = 4;
+}
+
+message AccountRequest {
+  string username = 1;
+  string password = 2;
+  string accountType = 3;
+  string accountName = 4;
+}
+
+message AccountReply {
+  bool status = 1;
+  string certificate = 2;
+  string pravateKey = 3;
+}
+
+message RegistRequest{
+	string username =1;
+	string password =2;
+	string certificate =3;
+	string channelId=4;
+}
+
+message RegistReply{	
+	bool status = 1;
+	string txReponse = 2;
+}
+

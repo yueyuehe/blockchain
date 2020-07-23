@@ -1,0 +1,25 @@
+﻿################################################################################
+# 此 .gitignore 文件已由 Microsoft(R) Visual Studio 自动创建。
+################################################################################
+
+/src/.vs/QMPeer
+/src/ChainCodeTest/bin
+/src/ChainCodeTest/obj
+/src/ConsoleApp1/bin
+/src/ConsoleApp1/obj
+/src/QMBlockClientSDK/bin
+/src/QMBlockClientSDK/obj
+/src/QMBlockGrpc/bin
+/src/QMBlockGrpc/obj
+/src/QMBlockSDK/bin
+/src/QMBlockSDK/obj
+/src/QMBlockServer/bin
+/src/QMBlockServer/obj
+/src/QMBlockUtils/bin
+/src/QMBlockUtils/obj
+/src/QMPeer/.vs/QMPeer
+/src/QMPeer/bin/Debug/netcoreapp2.1
+/src/QMPeer/obj
+/src/QMRaftCore/.vs/QMRaftCore
+/src/QMRaftCore/bin
+/src/QMRaftCore/obj
