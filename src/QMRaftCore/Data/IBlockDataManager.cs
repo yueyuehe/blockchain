@@ -16,7 +16,7 @@ namespace QMRaftCore.Data
 
         Task<bool> PutOnChainBlockAsync(Block block);
 
-        bool PutOnChainBlock(string blockHash);
+        Task<bool> PutOnChainBlockAsync(string blockHash);
 
         bool CacheBlock(Block block);
 

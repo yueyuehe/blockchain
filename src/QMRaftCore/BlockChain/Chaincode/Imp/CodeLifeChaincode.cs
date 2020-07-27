@@ -106,7 +106,7 @@ namespace QMRaftCore.BlockChain.Chaincode.Imp
 
 
 
-                var channelConfig = stub.GetState<ChannelConfig>(ConfigKey.Channel);
+                var channelConfig = stub.GetChannelConfig();
 
                 #region 检查链码是否重复
 
@@ -133,7 +133,7 @@ namespace QMRaftCore.BlockChain.Chaincode.Imp
                     }
                 }
                 channelConfig.ChainCodeConfigs.Add(chaincodeConfig);
-                stub.PutState(ConfigKey.Channel, channelConfig);
+                stub.SetChannelConfig(channelConfig);
                 return stub.Response("", StatusCode.Successful);
             }
             catch (Exception ex)
@@ -141,7 +141,6 @@ namespace QMRaftCore.BlockChain.Chaincode.Imp
                 return stub.Response(ex.Message, StatusCode.BAD_OTHERS);
             }
         }
-
 
         /// <summary>
         /// 初始化
@@ -163,7 +162,7 @@ namespace QMRaftCore.BlockChain.Chaincode.Imp
                 {
                     return stub.Response("", StatusCode.BAD_ARGS_NUMBER);
                 }
-                var channelconfig = stub.GetState<ChannelConfig>(ConfigKey.Channel);
+                var channelconfig = stub.GetChannelConfig();
                 var chaincode = channelconfig.ChainCodeConfigs
                                 .Where(p => p.Name == args[0]).FirstOrDefault();
                 if (chaincode == null)
@@ -173,7 +172,7 @@ namespace QMRaftCore.BlockChain.Chaincode.Imp
                 //如果不是已安装状态
                 if (chaincode.Status != ChaincodeStatus.INSTALLED)
                 {
-                    return stub.Response("", StatusCode.BAD_CHAINCODE_STATUS);
+                    return stub.Response("链码状态不正确", StatusCode.BAD_CHAINCODE_STATUS);
                 }
 
                 chaincode.Status = ChaincodeStatus.SERVICE;
@@ -187,7 +186,7 @@ namespace QMRaftCore.BlockChain.Chaincode.Imp
                 var rs = stub.InitChaincode(code.Name, code.Args);
                 if (rs)
                 {
-                    stub.PutState(ConfigKey.Channel, channelconfig);
+                    stub.SetChannelConfig(channelconfig);
                     return stub.Response("", StatusCode.Successful);
                 }
                 else

@@ -335,14 +335,14 @@ namespace QMRaftCore.Concensus.States
 
             var txResponse = new TxResponse();
             //获取链码配置中的背书节点,
-            var peers = _configProviders.GetEndorsePeer(requestData.Channel.ChannelId, requestData.Channel.Chaincode);
+            var peers = _configProviders.GetEndorsePeer(requestData.Channel.Chaincode);
             var taskList = new Dictionary<string, Task<EndorseResponse>>();
             var endorseDir = new Dictionary<string, EndorseResponse>();
             var endorseRequest = new EndorseRequest();
 
             endorseRequest.ChannelId = request.Header.ChannelId;
             endorseRequest.Request = request;
-
+            //添加背书task
             foreach (var item in peers)
             {
                 if (item.Id == CurrentState.Id)
@@ -373,7 +373,7 @@ namespace QMRaftCore.Concensus.States
                     }
                 }
                 ///验证背书策略
-                var rs = _configProviders.ValidateEndorse(requestData.Channel.ChannelId, requestData.Channel.Chaincode, endorseDir);
+                var rs = _configProviders.ValidateEndorse(requestData.Channel.Chaincode, endorseDir);
                 if (rs)
                 {
                     txResult = true;
@@ -386,26 +386,27 @@ namespace QMRaftCore.Concensus.States
                     break;
                 }
             }
-            //如果背书策略通过
+            //如果背书策略通过 
             if (txResult)
             {
                 //交易封装对象 交易头 背书结果 背书签名
-                var e = new Envelope();
-                e.TxReqeust = request;
+                var envelopr = new Envelope();
+                envelopr.TxReqeust = request;
                 var endorses = endorseDir.Select(p => p.Value).ToList();
                 foreach (var item in endorses)
                 {
-                    if (e.PayloadReponse.Status == false)
+                    //将背书结果赋值给交易信封  只需要赋值一次
+                    if (envelopr.PayloadReponse.Status == false)
                     {
-                        e.PayloadReponse.Status = item.Status;
-                        e.PayloadReponse.Message = item.Msg;
-                        e.PayloadReponse.TxReadWriteSet = item.TxReadWriteSet;
+                        envelopr.PayloadReponse.Status = item.Status;
+                        envelopr.PayloadReponse.Message = item.Msg;
+                        envelopr.PayloadReponse.TxReadWriteSet = item.TxReadWriteSet;
                     }
-                    e.Endorsements.Add(item.Endorsement);
+                    envelopr.Endorsements.Add(item.Endorsement);
                 }
 
-                _node.TxPool.AddAsync(e);
-                var statusRs = await _node.TxPool.TxStatus(e.TxReqeust.Data.TxId);
+                await _node.TxPool.AddAsync(envelopr);
+                var statusRs = await _node.TxPool.TxStatus(envelopr.TxReqeust.Data.TxId);
                 if (statusRs == "0")
                 {
                     txResponse.Status = true;
@@ -421,14 +422,14 @@ namespace QMRaftCore.Concensus.States
                     txResponse.Status = true;
                     txResponse.Msg = "服务器忙";
                 }
-
-                //返回
-                //txResponse.Status = true;
-                //txResponse.Msg = "待上链";
                 return txResponse;
             }
             else
             {
+                //失败的
+                var errorTx = endorseDir.Where(p => p.Value.Status == false);
+                
+                
                 var msgs = endorseDir.Select(p => p.Value).Select(p => p.Msg).ToArray();
                 txResponse.Msg = string.Join(",", msgs);
                 txResponse.Status = false;
@@ -475,7 +476,7 @@ namespace QMRaftCore.Concensus.States
         {
             var response = new HandOutResponse();
             //获取所有的节点
-            var peers = _configProviders.GetAllPeer(_node.GetChannelId());
+            var peers = _configProviders.GetAllPeer();
             //获取需求远程请求服务的节点
             var notself = peers.Where(p => p.Id != CurrentState.Id).ToList();
             //如果没有其他节点 本地提交区块 则返回结果

@@ -10,10 +10,9 @@ namespace QMRaftCore.QMProvider
         /// <summary>
         /// 获取链码的背书策略
         /// </summary>
-        /// <param name="ChannelId"></param>
         /// <param name="chainCode"></param>
         /// <returns></returns>
-        List<IPeer> GetEndorsePeer(string ChannelId, Chaincode chainCode);
-        bool ValidateEndorse(string channelId, Chaincode chainCode, Dictionary<string, EndorseResponse> endorseDir);
+        List<IPeer> GetEndorsePeer(Chaincode chainCode);
+        bool ValidateEndorse(Chaincode chainCode, Dictionary<string, EndorseResponse> endorseDir);
     }
 }

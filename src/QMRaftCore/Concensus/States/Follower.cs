@@ -194,7 +194,7 @@ namespace QMRaftCore.Concensus.States
         public async Task<Response<T>> Accept<T>(T command) where T : ICommand
         {
             //获取leader节点
-            var leader = _configProviders.GetPeer(_node.GetChannelId(), CurrentState.LeaderId);
+            var leader = _configProviders.GetPeer(CurrentState.LeaderId);
             if (leader != null)
             {
                 _logger.LogInformation($"follower id: {CurrentState.Id} forward to leader id: {leader.Id}");
@@ -222,7 +222,7 @@ namespace QMRaftCore.Concensus.States
             {
                 return;
             }
-            var peer = _configProviders.GetPeer(_node.GetChannelId(), CurrentState.LeaderId);
+            var peer = _configProviders.GetPeer(CurrentState.LeaderId);
             //当前block的信息
             var append = new AppendEntries();
             append.ChannelId = _node.GetChannelId();
@@ -251,7 +251,7 @@ namespace QMRaftCore.Concensus.States
         {
             //签名
             request = _configProviders.SignatureForTx(request);
-            var peer = _configProviders.GetPeer(_node.GetChannelId(), CurrentState.LeaderId);
+            var peer = _configProviders.GetPeer(CurrentState.LeaderId);
             return peer.Transaction(request);
         }
 
@@ -305,7 +305,7 @@ namespace QMRaftCore.Concensus.States
 
         private async Task<HandOutResponse> CommitBlock(Block block)
         {
-            var rs = _blockDataManager.PutOnChainBlock(block.Header.DataHash);
+            var rs = await _blockDataManager.PutOnChainBlockAsync(block.Header.DataHash);
             return new HandOutResponse()
             {
                 Success = rs

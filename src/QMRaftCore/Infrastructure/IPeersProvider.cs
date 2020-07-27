@@ -6,10 +6,9 @@ namespace QMRaftCore.Infrastructure
     public interface IPeersProvider
     {
 
-        List<IPeer> Get(string channelId);
+        List<IPeer> Get();
 
-        IPeer GetById(string channelid, string peerId);
+        IPeer Get(string ip);
 
-        IPeer GetByIp(string ip);
     }
 }

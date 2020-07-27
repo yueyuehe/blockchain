@@ -11,9 +11,12 @@ namespace QMBlockSDK.MongoModel
         [BsonId]
         [BsonRepresentation(BsonType.ObjectId)]
         public string Id { get; set; }
+        public string Chaincode { get; set; }
         public string Key { get; set; }
-        public string Value { get; set; }
-        public string Version { get; set; }
-        public bool Deleted { get; set; }
+
+        public string Data { get; set; }
+
+        public long BlockNumber { get; set; }
+        public string TxId { get; set; }
     }
 }

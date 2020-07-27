@@ -13,10 +13,8 @@ namespace QMRaftCore.Data
     public interface IFiniteStateMachine
     {
 
-        void Execute(Block block, IClientSessionHandle db = null);
+        Task ExecuteAsync(Block block, IClientSessionHandle db = null);
 
-        DataStatus GetConfig(string channelId, string ChancodeName, string key);
-
-        ChannelConfig GetChannelConfig(string channelId);
+        ChannelConfig GetChannelConfig();
     }
 }

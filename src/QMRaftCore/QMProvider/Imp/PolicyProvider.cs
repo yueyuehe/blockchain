@@ -37,25 +37,25 @@ namespace QMRaftCore.QMProvider.Imp
         /// <param name="ChannelId"></param>
         /// <param name="chainCode"></param>
         /// <returns></returns>
-        public List<IPeer> GetEndorsePeer(string channelId, Chaincode chainCode)
+        public List<IPeer> GetEndorsePeer(Chaincode chainCode)
         {
             _logger.LogInformation("获取背书需要的节点");
 
             var list = new List<IPeer>();
             //如果是其他 获取最新配置
-            var channelconfig = _dataManager.GetChannelConfig(channelId);
+            var channelconfig = _dataManager.GetChannelConfig();
             //获取链码名称的背书策略
             var chaincodeConfig = channelconfig.ChainCodeConfigs.Where(p => p.Name == chainCode.Name).FirstOrDefault();
             foreach (var item in chaincodeConfig.Policy.OrgIds)
             {
                 var org = channelconfig.OrgConfigs.Where(p => p.OrgId == item).FirstOrDefault();
-                var peer = _peersprovider.GetById(channelconfig.ChannelID, org.Address);
+                var peer = _peersprovider.Get(org.Address);
                 list.Add(peer);
             }
             return list;
         }
 
-        public bool ValidateEndorse(string channelId, Chaincode chainCode, Dictionary<string, EndorseResponse> endorseDir)
+        public bool ValidateEndorse(Chaincode chainCode, Dictionary<string, EndorseResponse> endorseDir)
         {
             _logger.LogInformation("开始校验背书策略");
             foreach (var item in endorseDir)
@@ -66,8 +66,8 @@ namespace QMRaftCore.QMProvider.Imp
                 }
             }
             //验证背书节点的策略
-            var peers = GetEndorsePeer(channelId, chainCode);
-            var channelconfig = _dataManager.GetChannelConfig(channelId);
+            var peers = GetEndorsePeer(chainCode);
+            var channelconfig = _dataManager.GetChannelConfig();
             //获取链码名称的背书策略
             var chaincodeConfig = channelconfig.ChainCodeConfigs.Where(p => p.Name == chainCode.Name).FirstOrDefault();
 

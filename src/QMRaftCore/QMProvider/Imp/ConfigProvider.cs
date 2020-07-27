@@ -33,9 +33,9 @@ namespace QMRaftCore.QMProvider.Imp
             _peersProvider = peersProvider;
         }
 
-        public List<IPeer> GetAllPeer(string channelid)
+        public List<IPeer> GetAllPeer()
         {
-            return _peersProvider.Get(channelid);
+            return _peersProvider.Get();
         }
 
         public int GetBatchTimeout()
@@ -43,9 +43,9 @@ namespace QMRaftCore.QMProvider.Imp
             return _settings.BatchTimeout;
         }
 
-        public List<IPeer> GetEndorsePeer(string channelId, Chaincode chainCode)
+        public List<IPeer> GetEndorsePeer(Chaincode chainCode)
         {
-            return _policyProvider.GetEndorsePeer(channelId, chainCode);
+            return _policyProvider.GetEndorsePeer(chainCode);
 
 
         }
@@ -70,9 +70,9 @@ namespace QMRaftCore.QMProvider.Imp
             return _settings.MinTimeout;
         }
 
-        public IPeer GetPeer(string channelId, string id)
+        public IPeer GetPeer(string id)
         {
-            return _peersProvider.GetById(channelId, id);
+            return _peersProvider.Get(id);
         }
 
         public PeerIdentity GetPeerIdentity()
@@ -83,7 +83,7 @@ namespace QMRaftCore.QMProvider.Imp
         public List<IPeer> GetPeersExcludeSelf(string channelId)
         {
             var identity = _identityProvider.GetPeerIdentity();
-            return _peersProvider.Get(channelId).Where(p => p.Id != identity.Address).ToList();
+            return _peersProvider.Get().Where(p => p.Id != identity.Address).ToList();
         }
 
         public string GetPrivateKey()
@@ -108,9 +108,9 @@ namespace QMRaftCore.QMProvider.Imp
             return tx;
         }
 
-        public bool ValidateEndorse(string channelId, Chaincode chainCode, Dictionary<string, EndorseResponse> endorseDir)
+        public bool ValidateEndorse(Chaincode chainCode, Dictionary<string, EndorseResponse> endorseDir)
         {
-            return _policyProvider.ValidateEndorse(channelId, chainCode, endorseDir);
+            return _policyProvider.ValidateEndorse(chainCode, endorseDir);
         }
     }
 }

@@ -9,7 +9,6 @@ namespace QMBlockSDK.CC
     {
 
         String GetTxRequestHeaderSignature();
-
         TxType GetTxType();
         string[] GetArgs();
         String GetFunction();
@@ -18,7 +17,7 @@ namespace QMBlockSDK.CC
         String GetChaincodeNameSpace();
         String GetChannelId();
         String GetChaincodeVersion();
-        string GetState(String key);
+        //string GetState(String key);
         T GetState<T>(String key) where T : new();
         PubliclyIdentity GetPeerIdentity();
 
@@ -29,21 +28,16 @@ namespace QMBlockSDK.CC
 
         ChainCodeInvokeResponse InvokeChaincode(String chaincodeName, List<byte[]> args, String channel);
 
-        void PutState(String key, string value);
-
-        void PutState(String key, object value);
+        void PutState<T>(String key, T value) where T : new();
 
         void DelState(String key);
 
-
         ChainCodeInvokeResponse ChaincodeQuery(Chaincode chaincode);
 
-
         bool ChaincodeInvoke(Chaincode chaincode);
-
         bool InitChaincode(string codename, string[] args);
 
-
+        Config.ChannelConfig GetChannelConfig();
+        void SetChannelConfig(Config.ChannelConfig config);
     }
-
 }

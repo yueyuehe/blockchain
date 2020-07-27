@@ -27,6 +27,7 @@ namespace QMRaftCore.QMProvider.Imp
         private readonly IConfigProvider _configProvider;
         private readonly Dictionary<string, bool> _txStatus;
         private readonly ILogger<TxPool> _log;
+        private readonly IMQProvider _mq;
 
         public TxPool(ILoggerFactory logfactory, IConfigProvider configProvider,
           IBlockDataManager blockDataManager, INode node)
@@ -101,8 +102,6 @@ namespace QMRaftCore.QMProvider.Imp
                     block.Header.ChannelId = _node.GetChannelId();
                     //Term
                     block.Header.PreviousHash = currentBlock.Header.DataHash;
-                    //block.Header.DataHash = DataHelper.GenerateMD5(Newtonsoft.Json.JsonConvert.SerializeObject(block));
-                    //block.Signer.Signature = DataHelper.RSASignature(Newtonsoft.Json.JsonConvert.SerializeObject(block), _configProvider.GetPrivateKey());
                     block.Header.DataHash = RSAHelper.GenerateMD5(Newtonsoft.Json.JsonConvert.SerializeObject(block));
                     block.Signer.Signature = RSAHelper.SignData(_configProvider.GetPrivateKey(), block);
 
@@ -121,7 +120,6 @@ namespace QMRaftCore.QMProvider.Imp
                     {
                         _log.LogWarning("区块分发错误");
                         _log.LogError(ex, ex.Message);
-
                     }
 
                     #endregion
@@ -133,6 +131,7 @@ namespace QMRaftCore.QMProvider.Imp
                         //通知  block中的交易成功
                         foreach (var item in block.Data.Envelopes)
                         {
+                            //_mq.PublishTxReponse();
                             _txStatus.Add(item.TxReqeust.Data.TxId, true);
                         }
                     }
@@ -165,7 +164,7 @@ namespace QMRaftCore.QMProvider.Imp
             {
                 foreach (var readset in item.PayloadReponse.TxReadWriteSet.ReadSet)
                 {
-                    var version = Convert.ToInt64(readset.Value.Split('_')[0]);
+                    var version = Convert.ToInt64(readset.Number);
                     //如果世界状态键重复 有重复的读取  判断版本号 留下最新的版本号的版本做为世界状态版本号
                     if (wordState.ContainsKey(readset.Key))
                     {
@@ -188,8 +187,7 @@ namespace QMRaftCore.QMProvider.Imp
                 //1.判断读集的版本号是否在世界状态中
                 foreach (var read in item.PayloadReponse.TxReadWriteSet.ReadSet)
                 {
-                    var version = Convert.ToInt64(read.Value.Split('_')[0]);
-
+                    var version = read.Number;
                     if (version != wordState[read.Key])
                     {
                         //交易无效
@@ -201,13 +199,6 @@ namespace QMRaftCore.QMProvider.Imp
                 if (tx)
                 {
                     foreach (var write in item.PayloadReponse.TxReadWriteSet.WriteSet)
-                    {
-                        if (wordState.ContainsKey(write.Key))
-                        {
-                            wordState[write.Key] = wordState[write.Key] + 1;
-                        }
-                    }
-                    foreach (var write in item.PayloadReponse.TxReadWriteSet.DeletedSet)
                     {
                         if (wordState.ContainsKey(write.Key))
                         {

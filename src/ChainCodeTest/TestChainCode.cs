@@ -75,8 +75,8 @@ namespace ChainCodeTest
             {
                 return stub.Response("", StatusCode.BAD_ARGS_NUMBER);
             }
-            var rs = stub.GetState("a");
-            return stub.Response(rs, StatusCode.Successful);
+            var rs = stub.GetState<Account>("a");
+            return stub.Response(rs);
         }
     }
 

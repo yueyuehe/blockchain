@@ -11,6 +11,7 @@ using QMBlockSDK.MongoModel;
 using MongoDB.Bson;
 using QMBlockSDK.CC;
 using Microsoft.Extensions.Caching.Memory;
+using System.Linq;
 
 namespace QMRaftCore.Data.Imp
 {
@@ -51,7 +52,7 @@ namespace QMRaftCore.Data.Imp
 
         public void ApplyBlock(Block block)
         {
-            Execute(block);
+            ExecuteAsync(block);
         }
 
         public bool CacheBlock(Block block)
@@ -176,18 +177,18 @@ namespace QMRaftCore.Data.Imp
                 //collection.InsertOne(session, entity);
                 //Execute(block, session);
                 await collection.InsertOneAsync(entity);
-                Execute(block);
+                await ExecuteAsync(block);
                 //collectionTest.InsertOne(block);
                 session.CommitTransaction();
             }
         }
 
-        public bool PutOnChainBlock(string blockHash)
+        public async Task<bool> PutOnChainBlockAsync(string blockHash)
         {
             var cacheblock = _cache.Get<Block>(ConfigKey.CahceBlock);
             if (blockHash == cacheblock.Header.DataHash)
             {
-                CommitBlockAsync(cacheblock);
+                await CommitBlockAsync(cacheblock);
                 _cache.Remove(ConfigKey.CahceBlock);
                 return true;
             }
@@ -196,7 +197,7 @@ namespace QMRaftCore.Data.Imp
 
         #region 状态机
 
-        public void Execute(Block block, IClientSessionHandle session = null)
+        public async Task ExecuteAsync(Block block, IClientSessionHandle session = null)
         {
             //把区块数据重新应用到 状态机
             /** 区分 document  按chaincodename进行document进行分类
@@ -272,19 +273,10 @@ namespace QMRaftCore.Data.Imp
                 {
                     var model = new DataStatus();
                     model.Key = set.Key;
-                    model.Value = set.Value;
-                    model.Version = block.Header.Number + "_" + envelope.TxReqeust.Data.TxId;
-                    model.Deleted = false;
-                    list.Add(model);
-                }
-                //删除集
-                var del = envelope.PayloadReponse.TxReadWriteSet.DeletedSet;
-                foreach (var set in del)
-                {
-                    var model = new DataStatus();
-                    model.Key = set.Key;
-                    model.Version = block.Header.Number + "_" + envelope.TxReqeust.Data.TxId;
-                    model.Deleted = true;
+                    model.Chaincode = set.Chaincode;
+                    model.Data = set.Data;
+                    model.BlockNumber = block.Header.Number;
+                    model.TxId = envelope.TxReqeust.Data.TxId;
                     list.Add(model);
                 }
             }
@@ -297,20 +289,19 @@ namespace QMRaftCore.Data.Imp
                     session.StartTransaction();
                     foreach (var item in list)
                     {
-                        var filter = new BsonDocument("Key", item.Key);
-                        var elements = new List<BsonElement>() {
-                        new BsonElement(nameof(item.Value),item.Value) ,
-                        new BsonElement(nameof(item.Version),item.Version),
-                        new BsonElement(nameof(item.Deleted),item.Deleted),
-                    };
-                        var update = new BsonDocument("$set", new BsonDocument(elements));
                         //获取 链码的doc文档
                         //doc.UpdateOne(session, filter, update, new UpdateOptions() { IsUpsert = true });
                         //mongodb 需要搭建集群才支持事务 先测试
-                        doc.UpdateOne(filter, update, new UpdateOptions() { IsUpsert = true });
+                        //doc.UpdateOne(filter, update, new UpdateOptions() { IsUpsert = true });
+                        var update = Builders<DataStatus>.Update
+                            .Set(p => p.Key, item.Key)
+                            .Set(p => p.TxId, item.TxId)
+                            .Set(p => p.Data, item.Data)
+                            .Set(p => p.Chaincode, item.Chaincode)
+                            .Set(p => p.BlockNumber, item.BlockNumber);
+                        await doc.UpdateOneAsync(p => p.Key == item.Key && p.Chaincode == item.Chaincode, update, new UpdateOptions { IsUpsert = true });
 
                     }
-                    // if an exception is thrown before reaching here the transaction will be implicitly aborted
                     session.CommitTransaction();
                 }
             }
@@ -318,42 +309,40 @@ namespace QMRaftCore.Data.Imp
             {
                 foreach (var item in list)
                 {
-                    var filter = new BsonDocument("Key", item.Key);
-                    var elements = new List<BsonElement>() {
-                        new BsonElement(nameof(item.Value),item.Value) ,
-                        new BsonElement(nameof(item.Version),item.Version),
-                        new BsonElement(nameof(item.Deleted),item.Deleted),
-                    };
-                    var update = new BsonDocument("$set", new BsonDocument(elements));
-                    //获取 链码的doc文档
-                    //doc.UpdateOne(session, filter, update, new UpdateOptions() { IsUpsert = true });
-                    doc.UpdateOne(filter, update, new UpdateOptions() { IsUpsert = true });
+                    var update = Builders<DataStatus>.Update
+                           .Set(p => p.Key, item.Key)
+                           .Set(p => p.TxId, item.TxId)
+                           .Set(p => p.Data, item.Data)
+                           .Set(p => p.Chaincode, item.Chaincode)
+                           .Set(p => p.BlockNumber, item.BlockNumber);
+                    await doc.UpdateOneAsync(p => p.Key == item.Key && p.Chaincode == item.Chaincode, update, new UpdateOptions { IsUpsert = true });
+
+                    //var filter = new BsonDocument("Key", item.Key);
+                    //var elements = new List<BsonElement>() {
+                    //    new BsonElement(nameof(item.Value),item.Value) ,
+                    //    new BsonElement(nameof(item.Version),item.Version),
+                    //    new BsonElement(nameof(item.Deleted),item.Deleted),
+                    //};
+                    //var update = new BsonDocument("$set", new BsonDocument(elements));
+                    ////获取 链码的doc文档
+                    ////doc.UpdateOne(session, filter, update, new UpdateOptions() { IsUpsert = true });
+                    //doc.UpdateOne(filter, update, new UpdateOptions() { IsUpsert = true });
                 }
             }
-
             #endregion
-
         }
 
-        public ChannelConfig GetChannelConfig(string channelId)
+        public ChannelConfig GetChannelConfig()
         {
-            var rs = GetConfig(_channelId, "", ConfigKey.Channel);
-            if (rs != null)
+            var collection = _statusDatabase.GetCollection<DataStatus>(ConfigKey.DataStatusDocument);
+            var status = collection.AsQueryable().Where(p => p.Key == ConfigKey.Channel && p.Chaincode == ConfigKey.SysNetConfigChaincode).FirstOrDefault();
+            if (status != null)
             {
-                return Newtonsoft.Json.JsonConvert.DeserializeObject<ChannelConfig>(rs.Value);
+                return Newtonsoft.Json.JsonConvert.DeserializeObject<ChannelConfig>(status.Data);
             }
             return null;
         }
 
-        public DataStatus GetConfig(string channelId, string ChancodeName, string key)
-        {
-            var collection = _statusDatabase.GetCollection<DataStatus>(ConfigKey.DataStatusDocument);
-
-            var all = collection.Find(p => true).ToList();
-
-
-            return collection.Find(p => p.Key == key).FirstOrDefault();
-        }
 
         #endregion
 

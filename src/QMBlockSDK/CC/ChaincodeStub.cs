@@ -13,7 +13,7 @@ namespace QMBlockSDK.CC
     {
         private readonly TxRequest _txRequest;
         private readonly PeerIdentity _identity;
-        protected readonly TxReadWriteSet _txreadWriteSet;
+        protected readonly TxReadWriteSet _txReadWriteSet;
         protected readonly IChainCodeExecutor _chainCodeExecutor;
         private readonly IMongoDatabase _mongoDB;
 
@@ -27,7 +27,7 @@ namespace QMBlockSDK.CC
             _chainCodeExecutor = chainCodeExecutor;
             _txRequest = txRequest;
             _identity = peerIdentity;
-            _txreadWriteSet = new TxReadWriteSet();
+            _txReadWriteSet = new TxReadWriteSet();
         }
 
         #region 请求头信息
@@ -85,7 +85,7 @@ namespace QMBlockSDK.CC
             {
                 return rs;
             }
-            rs.TxReadWriteSet = _txreadWriteSet;
+            rs.TxReadWriteSet = _txReadWriteSet;
             return rs;
         }
 
@@ -93,7 +93,7 @@ namespace QMBlockSDK.CC
         {
             var rs = new ChainCodeInvokeResponse();
             rs.StatusCode = StatusCode.Successful;
-            rs.TxReadWriteSet = _txreadWriteSet;
+            rs.TxReadWriteSet = _txReadWriteSet;
             rs.Data = data;
             return rs;
         }
@@ -105,41 +105,58 @@ namespace QMBlockSDK.CC
         #endregion
 
         #region 读集
-        public string GetState(string key)
+        public T GetState<T>(string key) where T : new()
         {
-            //key = GetChannelId() + "_" + GetChaincodeName() + "_" + key;
-            //之后再解决
-            //不通链码有不同的 文档
-            //var docname = GetChaincodeName();
-            //if (docname == ConfigKey.SysBlockQueryChaincode
-            //    || docname == ConfigKey.SysCodeLifeChaincode
-            //    || docname == ConfigKey.SysNetConfigChaincode)
-            //{
-            //    docname = ConfigKey.ChannelConfig;
-            //}
+            var rs = GetDataStatus(key, GetChaincodeName());
+            if (rs == null)
+            {
+                return default(T);
+            }
+            return Newtonsoft.Json.JsonConvert.DeserializeObject<T>(rs.Data);
+        }
 
+        private DataStatus GetDataStatus(string key, string chaincodename)
+        {
             var collection = _mongoDB.GetCollection<DataStatus>(ConfigKey.DataStatusDocument);
-            var filter = Builders<DataStatus>.Filter.Eq("Key", key);
-            var rs = collection.Find(filter).FirstOrDefault();
+            var rs = collection.AsQueryable().FirstOrDefault(p => p.Key == key && p.Chaincode == chaincodename);
             if (rs == null)
             {
                 return null;
             }
-            if (_txreadWriteSet.ReadSet.ContainsKey(key))
+            //设置读集
+            var readItem = _txReadWriteSet.ReadSet.FirstOrDefault(p => p.Key == key && p.Chaincode == GetChaincodeName());
+            if (readItem != null)
             {
-                _txreadWriteSet.ReadSet.Remove(key);
+                _txReadWriteSet.ReadSet.Remove(readItem);
             }
-            _txreadWriteSet.ReadSet.Add(key, rs.Version);
-            return rs.Value;
+            readItem = new ReadItem()
+            {
+                Chaincode = rs.Chaincode,
+                Key = rs.Key,
+                Number = rs.BlockNumber,
+                TxId = rs.TxId
+            };
+            _txReadWriteSet.ReadSet.Add(readItem);
+            return rs;
         }
 
-
-        public T GetState<T>(string key) where T : new()
+        /// <summary>
+        /// 获取通道配置
+        /// </summary>
+        /// <returns></returns>
+        public Config.ChannelConfig GetChannelConfig()
         {
-            var data = GetState(key);
-            return Newtonsoft.Json.JsonConvert.DeserializeObject<T>(data);
+            var name = GetChaincodeName();
+            if (name == ConfigKey.SysCodeLifeChaincode || name == ConfigKey.SysNetConfigChaincode)
+            {
+                var status = GetDataStatus(ConfigKey.Channel, ConfigKey.SysNetConfigChaincode);
+                if (status != null)
+                {
+                    return Newtonsoft.Json.JsonConvert.DeserializeObject<Config.ChannelConfig>(status.Data);
+                }
+            }
+            return null;
         }
-
         #endregion
 
         #region 节点身份信息
@@ -152,6 +169,7 @@ namespace QMBlockSDK.CC
         #endregion
 
         #region 执行其他链码
+
         public bool ChaincodeInvoke(Chaincode chaincode)
         {
             /**
@@ -173,46 +191,36 @@ namespace QMBlockSDK.CC
 
             var txRequest = ModelHelper.ToTxRequest(txheader);
 
-
+            //执行链码
             var rs = _chainCodeExecutor.ChaincodeInvoke(txRequest).Result;
             if (rs.StatusCode != StatusCode.Successful)
             {
                 return false;
             }
-            //读写集追加到集合
+            //追加读集
             foreach (var item in rs.TxReadWriteSet.ReadSet)
             {
-                if (!_txreadWriteSet.ReadSet.ContainsKey(item.Key))
+                if (!_txReadWriteSet.ReadSet.Any(p => p.Key == item.Key && p.Chaincode == item.Chaincode))
                 {
-                    _txreadWriteSet.ReadSet.Add(item.Key, item.Value);
+                    _txReadWriteSet.ReadSet.Add(item);
                 }
             }
-
+            //追加写集
             foreach (var item in rs.TxReadWriteSet.WriteSet)
             {
-                if (_txreadWriteSet.WriteSet.ContainsKey(item.Key))
+                var wirteItem = _txReadWriteSet.WriteSet.FirstOrDefault(p => p.Key == item.Key && p.Chaincode == item.Chaincode);
+                if (wirteItem != null)
                 {
-                    _txreadWriteSet.WriteSet.Remove(item.Key);
+                    _txReadWriteSet.WriteSet.Remove(wirteItem);
                 }
-                _txreadWriteSet.WriteSet.Add(item.Key, item.Value);
+                _txReadWriteSet.WriteSet.Add(item);
             }
-
-            foreach (var item in rs.TxReadWriteSet.DeletedSet)
-            {
-                if (_txreadWriteSet.DeletedSet.ContainsKey(item.Key))
-                {
-                    _txreadWriteSet.DeletedSet.Remove(item.Key);
-                }
-                _txreadWriteSet.DeletedSet.Add(item.Key, item.Value);
-            }
-
             return true;
         }
 
         public ChainCodeInvokeResponse ChaincodeQuery(Chaincode chaincode)
         {
             //需要判断背书策略的节点是否一致 或则 tx 的节点 > 新交易的节点
-
             var txheader = new TxHeader();
             txheader.ChannelId = _txRequest.Header.ChannelId;
             txheader.ChaincodeName = chaincode.Name;
@@ -230,32 +238,24 @@ namespace QMBlockSDK.CC
                 return rs;
             }
             //读写集追加到集合
+            //追加读集
             foreach (var item in rs.TxReadWriteSet.ReadSet)
             {
-                if (!_txreadWriteSet.ReadSet.ContainsKey(item.Key))
+                if (!_txReadWriteSet.ReadSet.Any(p => p.Key == item.Key && p.Chaincode == item.Chaincode))
                 {
-                    _txreadWriteSet.ReadSet.Add(item.Key, item.Value);
+                    _txReadWriteSet.ReadSet.Add(item);
                 }
             }
-
+            //追加写集
             foreach (var item in rs.TxReadWriteSet.WriteSet)
             {
-                if (_txreadWriteSet.WriteSet.ContainsKey(item.Key))
+                var wirteItem = _txReadWriteSet.WriteSet.FirstOrDefault(p => p.Key == item.Key && p.Chaincode == item.Chaincode);
+                if (wirteItem != null)
                 {
-                    _txreadWriteSet.WriteSet.Remove(item.Key);
+                    _txReadWriteSet.WriteSet.Remove(wirteItem);
                 }
-                _txreadWriteSet.WriteSet.Add(item.Key, item.Value);
+                _txReadWriteSet.WriteSet.Add(item);
             }
-
-            foreach (var item in rs.TxReadWriteSet.DeletedSet)
-            {
-                if (_txreadWriteSet.DeletedSet.ContainsKey(item.Key))
-                {
-                    _txreadWriteSet.DeletedSet.Remove(item.Key);
-                }
-                _txreadWriteSet.DeletedSet.Add(item.Key, item.Value);
-            }
-
             return rs;
         }
 
@@ -263,34 +263,60 @@ namespace QMBlockSDK.CC
 
         #region set集
 
-        public void PutState(string key, string value)
+        public void PutState<T>(string key, T data) where T : new()
         {
-            //key = GetChannelId() + "_" + GetChaincodeName() + "_" + key;
-            var wset = _txreadWriteSet.WriteSet;
-            if (wset.ContainsKey(key))
+            var item = new WriteItem()
             {
-                wset.Remove(key);
-            }
-            wset.Add(key, value);
+                Key = key,
+                Chaincode = GetChaincodeName(),
+                Data = Newtonsoft.Json.JsonConvert.SerializeObject(data)
+            };
+            SetStatus(item);
         }
 
-        public void PutState(string key, object value)
+        private void SetStatus(WriteItem item)
         {
-            PutState(key, Newtonsoft.Json.JsonConvert.SerializeObject(value));
+            var wset = _txReadWriteSet.WriteSet;
+            var setItem = wset.FirstOrDefault(p => p.Key == item.Key && p.Chaincode == item.Chaincode);
+            if (setItem != null)
+            {
+                wset.Remove(setItem);
+            }
+            wset.Add(item);
         }
-
+        
+        public void SetChannelConfig(Config.ChannelConfig config)
+        {
+            var name = GetChaincodeName();
+            if (name == ConfigKey.SysCodeLifeChaincode || name == ConfigKey.SysNetConfigChaincode)
+            {
+                var item = new WriteItem()
+                {
+                    Key = ConfigKey.Channel,
+                    Chaincode = ConfigKey.SysNetConfigChaincode,
+                    Data = Newtonsoft.Json.JsonConvert.SerializeObject(config)
+                };
+                SetStatus(item);
+            }
+            else
+            {
+                throw new Exception("error:非系统链码");
+            }
+        }
+       
         #endregion
 
         #region 删除
         public void DelState(string key)
         {
             key = GetChannelId() + "_" + GetChaincodeName() + "_" + key;
-            var dset = _txreadWriteSet.DeletedSet;
-            if (dset.ContainsKey(key))
+            var dset = _txReadWriteSet.WriteSet;
+            var setItem = dset.FirstOrDefault(p => p.Key == key && p.Chaincode == GetChaincodeName());
+            if (setItem != null)
             {
-                dset.Remove(key);
+                dset.Remove(setItem);
             }
-            dset.Add(key, true);
+            dset.Add(new WriteItem() { Key = key, Chaincode = GetChaincodeName(), Data = null }); ;
         }
 
         #endregion
@@ -301,14 +327,6 @@ namespace QMBlockSDK.CC
             {
                 return false;
             }
-
-            //var tx = new TxRequest();
-            //tx.Timestamp = _txRequest.Timestamp;
-            //tx.TxId = _txRequest.TxId;
-            //tx.Type = _txRequest.Type;
-            //tx.Channel.ChannelId = _txRequest.Channel.ChannelId;
-            //tx.Channel.Chaincode.Args = args;
-            //tx.Channel.Chaincode.Name = chaincodename;
 
             var txheader = new TxHeader();
             txheader.Type = _txRequest.Data.Type;
@@ -324,30 +342,23 @@ namespace QMBlockSDK.CC
                 return false;
             }
             //读写集追加到集合
+            //追加读集
             foreach (var item in rs.TxReadWriteSet.ReadSet)
             {
-                if (!_txreadWriteSet.ReadSet.ContainsKey(item.Key))
+                if (!_txReadWriteSet.ReadSet.Any(p => p.Key == item.Key && p.Chaincode == item.Chaincode))
                 {
-                    _txreadWriteSet.ReadSet.Add(item.Key, item.Value);
+                    _txReadWriteSet.ReadSet.Add(item);
                 }
             }
-
+            //追加写集
             foreach (var item in rs.TxReadWriteSet.WriteSet)
             {
-                if (_txreadWriteSet.WriteSet.ContainsKey(item.Key))
+                var wirteItem = _txReadWriteSet.WriteSet.FirstOrDefault(p => p.Key == item.Key && p.Chaincode == item.Chaincode);
+                if (wirteItem != null)
                 {
-                    _txreadWriteSet.WriteSet.Remove(item.Key);
+                    _txReadWriteSet.WriteSet.Remove(wirteItem);
                 }
-                _txreadWriteSet.WriteSet.Add(item.Key, item.Value);
-            }
-
-            foreach (var item in rs.TxReadWriteSet.DeletedSet)
-            {
-                if (_txreadWriteSet.DeletedSet.ContainsKey(item.Key))
-                {
-                    _txreadWriteSet.DeletedSet.Remove(item.Key);
-                }
-                _txreadWriteSet.DeletedSet.Add(item.Key, item.Value);
+                _txReadWriteSet.WriteSet.Add(item);
             }
 
             return true;
@@ -357,7 +368,6 @@ namespace QMBlockSDK.CC
         {
             throw new NotImplementedException();
         }
-        
-    
+
     }
 }

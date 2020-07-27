@@ -71,7 +71,7 @@ namespace QMRaftCore.BlockChain.Chaincode.Imp
             channel.OrgConfigs.Add(OrgConfig);
             //初始化系统链码
             InitSystemChainCode(channel);
-            stub.PutState(ConfigKey.Channel, Newtonsoft.Json.JsonConvert.SerializeObject(channel));
+            stub.SetChannelConfig(channel);
             return stub.Response("", StatusCode.Successful);
         }
 
@@ -157,7 +157,7 @@ namespace QMRaftCore.BlockChain.Chaincode.Imp
 
             #endregion
 
-            var channelconfig = stub.GetState<ChannelConfig>(ConfigKey.Channel);
+            var channelconfig = stub.GetChannelConfig();
             //组织重复检验
             if (channelconfig.OrgConfigs.Any(p => p.OrgId == org.OrgId))
             {
@@ -188,7 +188,7 @@ namespace QMRaftCore.BlockChain.Chaincode.Imp
             channelconfig.ChainCodeConfigs.Where(p => p.Name == ConfigKey.SysNetConfigChaincode).FirstOrDefault().Policy.OrgIds.Add(org.OrgId);
             channelconfig.ChainCodeConfigs.Where(p => p.Name == ConfigKey.SysNetConfigChaincode).FirstOrDefault().Policy.Number++;
             //保存数据
-            stub.PutState(ConfigKey.Channel, channelconfig);
+            stub.SetChannelConfig(channelconfig);
             return stub.Response("", StatusCode.Successful);
         }
 
@@ -245,7 +245,7 @@ namespace QMRaftCore.BlockChain.Chaincode.Imp
             #endregion
 
 
-            var channelconfig = stub.GetState<ChannelConfig>(ConfigKey.Channel);
+            var channelconfig = stub.GetChannelConfig();
             var org = channelconfig.OrgConfigs.Where(p => p.OrgId == newOrgMember.OrgId).FirstOrDefault();
             if (org == null)
             {
@@ -257,12 +257,12 @@ namespace QMRaftCore.BlockChain.Chaincode.Imp
             {
                 return stub.Response("成员名称重复", StatusCode.BAD_OTHERS);
             }
-            
+
             if (org.OrgMember.Any(p => p.Certificate.TBSCertificate.SerialNumber == p.Certificate.TBSCertificate.SerialNumber))
             {
                 return stub.Response("成员证书编号重复", StatusCode.BAD_OTHERS);
             }
-            
+
             if (org.OrgMember.Any(p => p.Certificate.TBSCertificate.PublicKey == p.Certificate.TBSCertificate.PublicKey))
             {
                 return stub.Response("成员公钥重复", StatusCode.BAD_OTHERS);
@@ -270,7 +270,7 @@ namespace QMRaftCore.BlockChain.Chaincode.Imp
             #endregion
 
             org.OrgMember.Add(newOrgMember);
-            stub.PutState(ConfigKey.Channel, channelconfig);
+            stub.SetChannelConfig(channelconfig);
             return stub.Response("", StatusCode.Successful);
         }
 
@@ -331,7 +331,7 @@ namespace QMRaftCore.BlockChain.Chaincode.Imp
             #endregion
 
 
-            var channelconfig = stub.GetState<ChannelConfig>(ConfigKey.Channel);
+            var channelconfig = stub.GetChannelConfig();
 
             //获取旧的组织配置
             var oldorg = channelconfig.OrgConfigs.Where(p => p.OrgId == newOrg.OrgId).FirstOrDefault();
@@ -343,7 +343,7 @@ namespace QMRaftCore.BlockChain.Chaincode.Imp
             oldorg.Name = newOrg.Name;
             oldorg.Certificate = newOrg.Certificate;
 
-            stub.PutState(ConfigKey.Channel, channelconfig);
+            stub.SetChannelConfig(channelconfig);
             return stub.Response("", StatusCode.Successful);
         }
 
@@ -379,7 +379,7 @@ namespace QMRaftCore.BlockChain.Chaincode.Imp
         /// <returns></returns>
         public ChainCodeInvokeResponse QueryChannelConfig(IChaincodeStub stub)
         {
-            var config = stub.GetState<ChannelConfig>(ConfigKey.Channel);
+            var config = stub.GetChannelConfig();
             return stub.Response(config);
         }
 

@@ -15,6 +15,7 @@ namespace ConsoleApp1
         public int Age { get; set; }
         public bool Sex { get; set; }
         public int Mail { get; set; }
+        public object Data { get; set; }
 
 
     }

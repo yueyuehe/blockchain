@@ -11,6 +11,8 @@ using QMBlockUtils;
 using System;
 using System.Security.Cryptography;
 using System.Linq;
+using RabbitMQ.Client;
+using System.Text;
 
 namespace ConsoleApp1
 {
@@ -20,22 +22,48 @@ namespace ConsoleApp1
         static ServiceProvider serviceProvider = null;
         static void Main(string[] args)
         {
+            /*
+            var factory = new ConnectionFactory() { HostName = "localhost" };
+            using (var connection = factory.CreateConnection())
+            using (var channel = connection.CreateModel())
+            {
+                channel.ExchangeDeclare(exchange: "direct_logs",
+                                        type: "direct");
 
+                var severity = (args.Length > 0) ? args[0] : "info";
+                var message = (args.Length > 1)
+                              ? string.Join(" ", args.Skip(1).ToArray())
+                              : "Hello World!";
+                var i = 0;
+                while (true)
+                {
+                    var body = Encoding.UTF8.GetBytes(message + i++);
+                    channel.BasicPublish(exchange: "direct_logs",
+                                         routingKey: severity,
+                                         basicProperties: null,
+                                         body: body);
+                    Console.WriteLine(" [x] Sent '{0}':'{1}'", severity, message);
+                    System.Threading.Thread.Sleep(500);
+                }
+            }
+
+            Console.WriteLine(" Press [enter] to exit.");
+            Console.ReadLine();
+
+
+            return;
+            */
             /*
             var client = new MongoClient("mongodb://localhost:27017");
-            var database = client.GetDatabase("test");
+            var database = client.GetDatabase("StatusDB_mychannel");
             //database.CreateCollection("testModel");
-            var testmodel = database.GetCollection<TestModel>("testModel");
-            var doc = new TestModel();
-            doc.Name = "test";
-            doc.Age = 123;
-            doc.Sex = false;
-            doc.Mail = 123;
-            var doclist = testmodel.AsQueryable().Where(p => true).ToList();
-            testmodel.InsertOne(doc);
+            var testmodel = database.GetCollection<QMBlockSDK.MongoModel.DataStatus>("datastatusdocument");
+
+            var item = testmodel.AsQueryable().Select(p => (QMBlockSDK.Config.ChannelConfig) p.Data).FirstOrDefault();
+
+
+            return;
             */
-
-
             var guid = Guid.NewGuid().ToString();
             var ip = "https://localhost:5000";
             var loggerFactory = LoggerFactory.Create(builder =>

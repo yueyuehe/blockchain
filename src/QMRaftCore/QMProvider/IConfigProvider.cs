@@ -13,12 +13,12 @@ namespace QMRaftCore.QMProvider
         long GetMinTimeout();
         List<IPeer> GetPeersExcludeSelf(string id);
         TimeSpan GetToCandidateTimeOut();
-        IPeer GetPeer(string channelId, string leaderId);
+        IPeer GetPeer(string leaderId);
         long GetHeartbeatTimeout();
-        List<IPeer> GetEndorsePeer(string channelId, Chaincode chainCode);
-        bool ValidateEndorse(string channelId, Chaincode chainCode, Dictionary<string, EndorseResponse> endorseDir);
+        List<IPeer> GetEndorsePeer(Chaincode chainCode);
+        bool ValidateEndorse(Chaincode chainCode, Dictionary<string, EndorseResponse> endorseDir);
         long GetEndorseTimeOut();
-        List<IPeer> GetAllPeer(string channelId);
+        List<IPeer> GetAllPeer();
         /// <summary>
         /// 获取可公开的身份
         /// </summary>

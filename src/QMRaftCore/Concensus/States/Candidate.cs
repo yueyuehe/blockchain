@@ -66,7 +66,7 @@ namespace QMRaftCore.Concensus.States
             var count = 0;
             var badvote = 0;
 
-            var allpeer = _configProviders.GetAllPeer(_node.GetChannelId());
+            var allpeer = _configProviders.GetAllPeer();
 
             var winVotes = (allpeer.Count / 2) + 1;// (allpeer.Count % 2);
 

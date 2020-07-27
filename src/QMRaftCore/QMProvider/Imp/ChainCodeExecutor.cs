@@ -228,8 +228,8 @@ namespace QMRaftCore.QMProvider
             {
                 return new ChaincodeStub(this, _dataManager.GetStatusDB(), request, identity);
             }
-            //如果是其他链码
-            var config = _dataManager.GetChannelConfig(requestData.Channel.ChannelId);
+            //如果是其他链码 获取链码配置
+            var config = _dataManager.GetChannelConfig();
             var chaincode = config.ChainCodeConfigs.Where(p => p.Name == requestData.Channel.Chaincode.Name).FirstOrDefault();
             if (chaincode == null)
             {

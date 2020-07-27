@@ -26,9 +26,9 @@ namespace QMRaftCore.QMProvider.Imp
         }
 
         //获取通道中所有节点
-        public List<IPeer> Get(string channelId)
+        public List<IPeer> Get()
         {
-            var config = _dataManager.GetChannelConfig(channelId);
+            var config = _dataManager.GetChannelConfig();
             var list = config.OrgConfigs.Select(p => p.Address).ToList();
             var peerList = new List<IPeer>();
             foreach (var item in list)
@@ -44,7 +44,7 @@ namespace QMRaftCore.QMProvider.Imp
             return peerList;
         }
 
-        public IPeer GetById(string channelid, string peerId)
+        public IPeer Get(string peerId)
         {
             if (_grpcChannel.ContainsKey(peerId))
             {
@@ -56,16 +56,6 @@ namespace QMRaftCore.QMProvider.Imp
                 _grpcChannel.Add(peerId, channel);
                 return new GrpcPeer(peerId, channel, _factory);
             }
-        }
-
-        public IPeer GetByIp(string ip)
-        {
-            if (!_grpcChannel.ContainsKey(ip))
-            {
-                var channel = GrpcChannel.ForAddress(ip);
-                _grpcChannel.Add(ip, channel);
-            }
-            return new GrpcPeer(ip, _grpcChannel[ip], _factory);
         }
     }
 }
