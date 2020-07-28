@@ -18,7 +18,6 @@ namespace QMBlockClientSDK.Service.Interface
 {
     public interface IConfigService
     {
-
         #region Invoke  
 
         Task<TxResponse> InitChannel(string channelId);

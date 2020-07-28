@@ -17,8 +17,5 @@ namespace ConsoleApp1
 
 
         }
-
-
-
     }
 }

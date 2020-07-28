@@ -3,6 +3,7 @@ using QMBlockSDK.TX;
 using QMRaftCore.Concensus.Messages;
 using QMRaftCore.Concensus.Peers;
 using QMRaftCore.Infrastructure;
+using QMRaftCore.Msg.Model;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -19,18 +20,21 @@ namespace QMRaftCore.QMProvider.Imp
         private readonly ISettings _settings;
         private readonly IIdentityProvider _identityProvider;
         private readonly IPeersProvider _peersProvider;
+        private readonly MQSetting _mQSetting;
 
         public ConfigProvider(
             IAssemblyProvider assemblyProvider,
             IPolicyProvider policyProvider,
             IIdentityProvider identityProvider,
-            IPeersProvider peersProvider)
+            IPeersProvider peersProvider,
+            MQSetting mQSetting)
         {
             _settings = new InMemorySettings();
             //_assemblyProvider = assemblyProvider;
             _identityProvider = identityProvider;
             _policyProvider = policyProvider;
             _peersProvider = peersProvider;
+            _mQSetting = mQSetting;
         }
 
         public List<IPeer> GetAllPeer()
@@ -68,6 +72,11 @@ namespace QMRaftCore.QMProvider.Imp
         public long GetMinTimeout()
         {
             return _settings.MinTimeout;
+        }
+
+        public MQSetting GetMQSetting()
+        {
+            return this._mQSetting;
         }
 
         public IPeer GetPeer(string id)

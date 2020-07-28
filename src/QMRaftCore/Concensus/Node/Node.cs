@@ -10,6 +10,7 @@ using QMRaftCore.Data.Imp;
 using QMRaftCore.Data.Model;
 using QMRaftCore.FiniteStateMachine;
 using QMRaftCore.Infrastructure;
+using QMRaftCore.Msg.Model;
 using QMRaftCore.QMProvider;
 using QMRaftCore.QMProvider.Imp;
 using System;
@@ -26,17 +27,19 @@ namespace QMRaftCore.Concensus.Node
         private readonly StateProvider _stateprovider;
         private readonly string _channelId;
         private readonly DataManager _dataManager;
-
+        
+        private readonly MQSetting _mq;
 
         public Node(
             string channelId,
             ILoggerFactory loggerFactory,
             IAssemblyProvider assemblyProvider,
             IIdentityProvider identityProvider,
-            DataManager dataManager
+            DataManager dataManager,
+            MQSetting mQSetting
             )
         {
-
+            _mq = mQSetting;
             _channelId = channelId;
             _dataManager = dataManager;
             _loggerFactory = loggerFactory;
@@ -47,7 +50,7 @@ namespace QMRaftCore.Concensus.Node
             var peerProvider = new GrpcPeerProvider(loggerFactory, dataManager);
             var policeProvider = new PolicyProvider(loggerFactory, identityProvider, peerProvider, dataManager);
 
-            _configProvider = new ConfigProvider(assemblyProvider, policeProvider, identityProvider, peerProvider);
+            _configProvider = new ConfigProvider(assemblyProvider, policeProvider, identityProvider, peerProvider,_mq);
             TxPool = new TxPool(loggerFactory, _configProvider, _dataManager, this);
             _stateprovider = new StateProvider(_configProvider, this, _loggerFactory, _dataManager);
         }

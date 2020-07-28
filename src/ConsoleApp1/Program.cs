@@ -18,7 +18,7 @@ namespace ConsoleApp1
 {
     class Program
     {
-        static string channelId = "mychannel";
+        static readonly string channelId = "mychannel";
         static ServiceProvider serviceProvider = null;
         static void Main(string[] args)
         {
@@ -73,6 +73,7 @@ namespace ConsoleApp1
                     .AddFilter("System", LogLevel.Warning)
                     .AddFilter("LoggingConsoleApp.Program", LogLevel.Debug);
             });
+            
             serviceProvider = new ServiceCollection()
                            .AddScoped<IConfigService, ConfigService>()
                            .AddScoped<ITxService, TxService>()
@@ -226,12 +227,14 @@ namespace ConsoleApp1
 
         public static QMBlockSDK.TX.TxResponse InvokeTx()
         {
-            var tx = new QMBlockSDK.TX.TxHeader();
-            tx.ChannelId = "mychannel";
-            tx.Type = TxType.Invoke;
-            tx.Args = new string[] { "b", "a", "1" };
-            tx.FuncName = "Transfer";
-            tx.ChaincodeName = "TestChainCode";
+            _ = new QMBlockSDK.TX.TxHeader
+            {
+                ChannelId = "mychannel",
+                Type = TxType.Invoke,
+                Args = new string[] { "b", "a", "1" },
+                FuncName = "Transfer",
+                ChaincodeName = "TestChainCode"
+            };
             var client = GetChannel();
             return client.InvokeTx("TestChainCode", "Transfer", new string[] { "b", "a", "1" }).Result;
         }

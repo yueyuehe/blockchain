@@ -66,6 +66,7 @@ namespace QMBlockClientSDK.Imp
         }
         #endregion
 
+
         #region 查询类型的交易 (严格来说只是查询数据 不算交易)
         public async Task<TxResponse> TxQuery(TxHeader request)
         {
@@ -91,6 +92,7 @@ namespace QMBlockClientSDK.Imp
 
 
         #endregion
+
 
         #region 身份认证
         public async Task<string> LoginAsync(string pk, string canumber)
@@ -227,11 +229,13 @@ namespace QMBlockClientSDK.Imp
         //登记注册账号
         public async Task<bool> RegistAccountAsync(string username, string password, string channelId, Certificate ca)
         {
-            var request = new Client.RegistRequest();
-            request.Certificate = Newtonsoft.Json.JsonConvert.SerializeObject(ca);
-            request.ChannelId = channelId;
-            request.Username = username;
-            request.Password = password;
+            var request = new Client.RegistRequest
+            {
+                Certificate = Newtonsoft.Json.JsonConvert.SerializeObject(ca),
+                ChannelId = channelId,
+                Username = username,
+                Password = password
+            };
 
             var rs = await AuthClient.RegistAsync(request);
             if (rs.Status)

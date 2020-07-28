@@ -25,9 +25,8 @@ namespace QMRaftCore.QMProvider.Imp
         private readonly IBlockDataManager _blockDataManager;
         private readonly INode _node;
         private readonly IConfigProvider _configProvider;
-        private readonly Dictionary<string, bool> _txStatus;
+        //private readonly Dictionary<string, bool> _txStatus;
         private readonly ILogger<TxPool> _log;
-        private readonly IMQProvider _mq;
 
         public TxPool(ILoggerFactory logfactory, IConfigProvider configProvider,
           IBlockDataManager blockDataManager, INode node)
@@ -38,7 +37,7 @@ namespace QMRaftCore.QMProvider.Imp
             _timer = new Timer(ResetElectionTimer, null, _configProvider.GetBatchTimeout(), _configProvider.GetBatchTimeout());
             _blockDataManager = blockDataManager;
             _node = node;
-            _txStatus = new Dictionary<string, bool>();
+            //_txStatus = new Dictionary<string, bool>();
         }
 
         private void ResetElectionTimer(object x)
@@ -89,13 +88,16 @@ namespace QMRaftCore.QMProvider.Imp
                     }
 
                     #region 组装区块数据
+                    var txmq = new Msg.Imp.TxMQ(_configProvider.GetMQSetting());
 
                     var currentBlock = _blockDataManager.GetLastBlock(_node.GetChannelId());
                     var block = new Block();
-                    block.Signer = new Signer();
                     block.Signer.Identity = _configProvider.GetPeerIdentity().GetPublic();
                     //交易验证
-                    data = Validate(data);
+                    data = Validate(data, out List<Envelope> errorTx);
+                    //错误交易发送
+                    txmq.PublishTxResponse(errorTx, "交易失败");
+
                     block.Data.Envelopes = data;
                     block.Header.Timestamp = DateTime.Now.Ticks;
                     block.Header.Number = currentBlock.Header.Number + 1;
@@ -118,21 +120,33 @@ namespace QMRaftCore.QMProvider.Imp
                     }
                     catch (Exception ex)
                     {
+                        ts = new Concensus.Messages.HandOutResponse
+                        {
+                            Message = ex.Message,
+                            Success = false
+                        };
                         _log.LogWarning("区块分发错误");
                         _log.LogError(ex, ex.Message);
                     }
 
                     #endregion
 
-                    #region 消息回调
-
+                    #region 上链结果消息发送
                     if (ts.Success)
                     {
-                        //通知  block中的交易成功
+                        txmq.PublishTxResponse(block, null);
+                    }
+                    else
+                    {
+                        txmq.PublishTxResponse(block, ts.Message);
+                    }
+                    /*
+                    if (ts.Success)
+                    {
                         foreach (var item in block.Data.Envelopes)
                         {
-                            //_mq.PublishTxReponse();
-                            _txStatus.Add(item.TxReqeust.Data.TxId, true);
+                            //
+                            // _txStatus.Add(item.TxReqeust.Data.TxId, true);
                         }
                     }
                     else
@@ -143,6 +157,7 @@ namespace QMRaftCore.QMProvider.Imp
                             _txStatus.Add(item.TxReqeust.Data.TxId, false);
                         }
                     }
+                    */
                     #endregion
                 }
             }
@@ -156,7 +171,7 @@ namespace QMRaftCore.QMProvider.Imp
             }
         }
 
-        private List<Envelope> Validate(List<Envelope> data)
+        private List<Envelope> Validate(List<Envelope> data, out List<Envelope> errTx)
         {
             //初始化世界状态的值
             var wordState = new Dictionary<string, long>();
@@ -180,7 +195,8 @@ namespace QMRaftCore.QMProvider.Imp
                 }
             }
             var rightTx = new List<Envelope>();
-            var errTx = new List<Envelope>();
+            //var errTx = new List<Envelope>();
+            errTx = new List<Envelope>();
             foreach (var item in data)
             {
                 var tx = true;
@@ -209,7 +225,7 @@ namespace QMRaftCore.QMProvider.Imp
                 }
                 else
                 {
-                    _txStatus.Add(item.TxReqeust.Data.TxId, false);
+                    //_txStatus.Add(item.TxReqeust.Data.TxId, false);
                     errTx.Add(item);
                 }
             }
@@ -252,6 +268,7 @@ namespace QMRaftCore.QMProvider.Imp
         }
 
 
+        /*
         /// <summary>
         /// 获取tx的状态 0  上链成功  1上链失败 2超时
         /// </summary>
@@ -291,5 +308,6 @@ namespace QMRaftCore.QMProvider.Imp
              });
         }
 
+        */
     }
 }

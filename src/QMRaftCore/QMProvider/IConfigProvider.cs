@@ -2,6 +2,7 @@
 using QMBlockSDK.TX;
 using QMRaftCore.Concensus.Messages;
 using QMRaftCore.Concensus.Peers;
+using QMRaftCore.Msg.Model;
 using System;
 using System.Collections.Generic;
 
@@ -9,6 +10,7 @@ namespace QMRaftCore.QMProvider
 {
     public interface IConfigProvider
     {
+        MQSetting GetMQSetting();
         PeerIdentity GetPeerIdentity();
         long GetMinTimeout();
         List<IPeer> GetPeersExcludeSelf(string id);

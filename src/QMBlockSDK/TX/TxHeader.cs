@@ -1,9 +1,11 @@
 ﻿using QMBlockSDK.Idn;
+using System;
 
 namespace QMBlockSDK.TX
 {
     public class TxHeader
     {
+        public string TxHeaderId { get; set; } = Guid.NewGuid().ToString();
         public string ChannelId { get; set; }
 
         public string ChaincodeName { get; set; }

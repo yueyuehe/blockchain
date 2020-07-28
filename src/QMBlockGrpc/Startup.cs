@@ -15,6 +15,7 @@ using QMRaftCore.Concensus.Node;
 using QMRaftCore.Data.Model;
 using QMRaftCore.FiniteStateMachine;
 using QMRaftCore.Infrastructure;
+using QMRaftCore.Msg.Model;
 using QMRaftCore.QMProvider;
 using QMRaftCore.QMProvider.Imp;
 using System;
@@ -47,7 +48,6 @@ namespace QMBlockGrpc
             #region raft网络相关配置
             services.AddMemoryCache();
 
-
             services.AddScoped<IInvokeBLL, InvokeBLL>();
             services.AddScoped<IQueryBLL, QueryBLL>();
             services.AddScoped<IIdentityProvider, IdentityProvider>();
@@ -79,8 +79,6 @@ namespace QMBlockGrpc
 
             #endregion
 
-            //var pkfile = Configuration.GetSection("peerIdentity:PkFile").Value;
-            //var cafile = Configuration.GetSection("peerIdentity:CaFile").Value;
             var mspFile = Configuration.GetSection("peerIdentity:MspFile").Value;
             #region CA账号与节点账号
             var basepath = AppContext.BaseDirectory;
@@ -142,6 +140,12 @@ namespace QMBlockGrpc
             #endregion
 
             services.AddScoped<NodePeer>();
+            #region RabbitMQ消息队列配置
+            var mq = new MQSetting();
+            Configuration.GetSection("RabbitMQ").Bind(mq);
+            //var mqsetting = Configuration.Get<MQSetting>( "RabbitMQ"); .Bind<MQSetting>("RabbitMQ");
+            services.AddSingleton(mq);
+            #endregion
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.

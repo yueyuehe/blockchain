@@ -22,8 +22,10 @@ namespace QMBlockClientSDK.Service.Interface
     public interface ITxService
     {
         Task<TxResponse> QueryTx(TxHeader request);
-
+        Task<TxResponse> InvokeTxWaitResult(TxHeader request);
+        
         Task<TxResponse> InvokeTx(TxHeader request);
+
 
     }
 }

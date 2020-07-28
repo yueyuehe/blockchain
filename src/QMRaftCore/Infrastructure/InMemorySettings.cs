@@ -10,7 +10,7 @@ namespace QMRaftCore.Infrastructure
             CommandTimeout = 5000;
             EndorseTimeOut = 5000;
 
-            MaxTxCount = 100;
+            MaxTxCount = 1;
             BatchTimeout = 2000;
         }
 

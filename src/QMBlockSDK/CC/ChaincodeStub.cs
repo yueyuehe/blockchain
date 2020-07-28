@@ -78,9 +78,11 @@ namespace QMBlockSDK.CC
         /// <returns></returns>
         public ChainCodeInvokeResponse Response(string msg, StatusCode code)
         {
-            var rs = new ChainCodeInvokeResponse();
-            rs.Message = msg;
-            rs.StatusCode = code;
+            var rs = new ChainCodeInvokeResponse
+            {
+                Message = msg,
+                StatusCode = code
+            };
             if (rs.StatusCode != StatusCode.Successful)
             {
                 return rs;
@@ -91,11 +93,12 @@ namespace QMBlockSDK.CC
 
         public ChainCodeInvokeResponse Response<T>(T data) where T : new()
         {
-            var rs = new ChainCodeInvokeResponse();
-            rs.StatusCode = StatusCode.Successful;
-            rs.TxReadWriteSet = _txReadWriteSet;
-            rs.Data = data;
-            return rs;
+            return new ChainCodeInvokeResponse
+            {
+                StatusCode = StatusCode.Successful,
+                TxReadWriteSet = _txReadWriteSet,
+                Data = data
+            };
         }
         public ChainCodeInvokeResponse InvokeChaincode(string chaincodeName, List<byte[]> args, string channel)
         {
@@ -110,7 +113,7 @@ namespace QMBlockSDK.CC
             var rs = GetDataStatus(key, GetChaincodeName());
             if (rs == null)
             {
-                return default(T);
+                return default;
             }
             return Newtonsoft.Json.JsonConvert.DeserializeObject<T>(rs.Data);
         }
@@ -182,12 +185,14 @@ namespace QMBlockSDK.CC
                 return false;
             }
 
-            var txheader = new TxHeader();
-            txheader.ChannelId = _txRequest.Header.ChannelId;
-            txheader.ChaincodeName = chaincode.Name;
-            txheader.Args = chaincode.Args;
-            txheader.FuncName = chaincode.FuncName;
-            txheader.Type = TxType.Invoke;
+            var txheader = new TxHeader
+            {
+                ChannelId = _txRequest.Header.ChannelId,
+                ChaincodeName = chaincode.Name,
+                Args = chaincode.Args,
+                FuncName = chaincode.FuncName,
+                Type = TxType.Invoke
+            };
 
             var txRequest = ModelHelper.ToTxRequest(txheader);
 
@@ -221,12 +226,14 @@ namespace QMBlockSDK.CC
         public ChainCodeInvokeResponse ChaincodeQuery(Chaincode chaincode)
         {
             //需要判断背书策略的节点是否一致 或则 tx 的节点 > 新交易的节点
-            var txheader = new TxHeader();
-            txheader.ChannelId = _txRequest.Header.ChannelId;
-            txheader.ChaincodeName = chaincode.Name;
-            txheader.Args = chaincode.Args;
-            txheader.FuncName = chaincode.FuncName;
-            txheader.Type = TxType.Query;
+            var txheader = new TxHeader
+            {
+                ChannelId = _txRequest.Header.ChannelId,
+                ChaincodeName = chaincode.Name,
+                Args = chaincode.Args,
+                FuncName = chaincode.FuncName,
+                Type = TxType.Query
+            };
 
             var txRequest = ModelHelper.ToTxRequest(txheader);
 
@@ -284,7 +291,7 @@ namespace QMBlockSDK.CC
             }
             wset.Add(item);
         }
-        
+
         public void SetChannelConfig(Config.ChannelConfig config)
         {
             var name = GetChaincodeName();
@@ -303,7 +310,7 @@ namespace QMBlockSDK.CC
                 throw new Exception("error:非系统链码");
             }
         }
-       
+
         #endregion
 
         #region 删除
@@ -328,11 +335,13 @@ namespace QMBlockSDK.CC
                 return false;
             }
 
-            var txheader = new TxHeader();
-            txheader.Type = _txRequest.Data.Type;
-            txheader.ChannelId = _txRequest.Data.Channel.ChannelId;
-            txheader.ChaincodeName = chaincodename;
-            txheader.Args = args;
+            var txheader = new TxHeader
+            {
+                Type = _txRequest.Data.Type,
+                ChannelId = _txRequest.Data.Channel.ChannelId,
+                ChaincodeName = chaincodename,
+                Args = args
+            };
             var txRequest = ModelHelper.ToTxRequest(txheader);
 
             var rs = _chainCodeExecutor.ChaincodeInit(txRequest).Result;

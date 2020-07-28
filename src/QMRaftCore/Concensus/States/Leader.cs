@@ -246,9 +246,11 @@ namespace QMRaftCore.Concensus.States
         /// <returns></returns>
         public async Task<AppendEntriesResponse> Handle(AppendEntries appendEntries)
         {
-            var response = new AppendEntriesResponse();
-            response.Term = CurrentState.CurrentTerm;
-            response.Success = false;
+            var response = new AppendEntriesResponse
+            {
+                Term = CurrentState.CurrentTerm,
+                Success = false
+            };
 
             if (CurrentState.Id == appendEntries.LeaderId
                && CurrentState.CurrentTerm == appendEntries.Term
@@ -338,10 +340,11 @@ namespace QMRaftCore.Concensus.States
             var peers = _configProviders.GetEndorsePeer(requestData.Channel.Chaincode);
             var taskList = new Dictionary<string, Task<EndorseResponse>>();
             var endorseDir = new Dictionary<string, EndorseResponse>();
-            var endorseRequest = new EndorseRequest();
-
-            endorseRequest.ChannelId = request.Header.ChannelId;
-            endorseRequest.Request = request;
+            var endorseRequest = new EndorseRequest
+            {
+                ChannelId = request.Header.ChannelId,
+                Request = request
+            };
             //添加背书task
             foreach (var item in peers)
             {
@@ -390,8 +393,10 @@ namespace QMRaftCore.Concensus.States
             if (txResult)
             {
                 //交易封装对象 交易头 背书结果 背书签名
-                var envelopr = new Envelope();
-                envelopr.TxReqeust = request;
+                var envelopr = new Envelope
+                {
+                    TxReqeust = request
+                };
                 var endorses = endorseDir.Select(p => p.Value).ToList();
                 foreach (var item in endorses)
                 {
@@ -405,8 +410,11 @@ namespace QMRaftCore.Concensus.States
                     envelopr.Endorsements.Add(item.Endorsement);
                 }
 
-                await _node.TxPool.AddAsync(envelopr);
-                var statusRs = await _node.TxPool.TxStatus(envelopr.TxReqeust.Data.TxId);
+                //交易加入交易池中
+                _ = _node.TxPool.AddAsync(envelopr);
+                return new TxResponse() { Status = true, Msg = "等待上链", TxId = request.Data.TxId };
+                /*
+                //var statusRs = await _node.TxPool.TxStatus(envelopr.TxReqeust.Data.TxId);
                 if (statusRs == "0")
                 {
                     txResponse.Status = true;
@@ -422,17 +430,17 @@ namespace QMRaftCore.Concensus.States
                     txResponse.Status = true;
                     txResponse.Msg = "服务器忙";
                 }
-                return txResponse;
+                */
+                //return txResponse;
             }
             else
             {
                 //失败的
-                var errorTx = endorseDir.Where(p => p.Value.Status == false);
-                
-                
-                var msgs = endorseDir.Select(p => p.Value).Select(p => p.Msg).ToArray();
-                txResponse.Msg = string.Join(",", msgs);
+                var errorTx = endorseDir.Where(p => p.Value.Status == false).Select(p => p.Key + ":" + p.Value.Msg).ToList();
+                txResponse.Msg = "背书失败";
+                txResponse.Data = errorTx;
                 txResponse.Status = false;
+                txResponse.TxId = request.Data.TxId;
                 return txResponse;
             }
         }
@@ -458,7 +466,7 @@ namespace QMRaftCore.Concensus.States
             response.Msg = "背书完成";
             response.Endorsement.Identity = _configProviders.GetPublicIndentity();
 
-            var str = Newtonsoft.Json.JsonConvert.SerializeObject(response);
+            //var str = Newtonsoft.Json.JsonConvert.SerializeObject(response);
             var privatekey = _configProviders.GetPrivateKey();
             //节点对背书数据签名
             // response.Endorsement.Signature = DataHelper.RSASignature(str, privatekey);
@@ -488,10 +496,12 @@ namespace QMRaftCore.Concensus.States
             }
             //分发区块
             List<Task<HandOutResponse>> taskList = new List<Task<HandOutResponse>>();
-            var handOutRequest = new HandOutRequest();
-            handOutRequest.Block = request.Block;
-            handOutRequest.Type = HandOutType.CheckSave;
-            handOutRequest.ChannelId = request.ChannelId;
+            var handOutRequest = new HandOutRequest
+            {
+                Block = request.Block,
+                Type = HandOutType.CheckSave,
+                ChannelId = request.ChannelId
+            };
             foreach (var item in notself)
             {
                 taskList.Add(item.BlockHandOut(handOutRequest));
@@ -543,10 +553,12 @@ namespace QMRaftCore.Concensus.States
             {
                 //本地保存区块 
                 //通知节点本地保存区块
-                var commitHandOutRequest = new HandOutRequest();
-                commitHandOutRequest.Block = request.Block;
-                commitHandOutRequest.ChannelId = _node.GetChannelId();
-                commitHandOutRequest.Type = HandOutType.Commit;
+                var commitHandOutRequest = new HandOutRequest
+                {
+                    Block = request.Block,
+                    ChannelId = _node.GetChannelId(),
+                    Type = HandOutType.Commit
+                };
                 foreach (var item in notself)
                 {
                     taskList.Add(item.BlockHandOut(commitHandOutRequest));

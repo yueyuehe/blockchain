@@ -11,7 +11,6 @@ using QMBlockSDK.MongoModel;
 using MongoDB.Bson;
 using QMBlockSDK.CC;
 using Microsoft.Extensions.Caching.Memory;
-using System.Linq;
 
 namespace QMRaftCore.Data.Imp
 {
@@ -271,12 +270,14 @@ namespace QMRaftCore.Data.Imp
                 var writeSet = envelope.PayloadReponse.TxReadWriteSet.WriteSet;
                 foreach (var set in writeSet)
                 {
-                    var model = new DataStatus();
-                    model.Key = set.Key;
-                    model.Chaincode = set.Chaincode;
-                    model.Data = set.Data;
-                    model.BlockNumber = block.Header.Number;
-                    model.TxId = envelope.TxReqeust.Data.TxId;
+                    var model = new DataStatus
+                    {
+                        Key = set.Key,
+                        Chaincode = set.Chaincode,
+                        Data = set.Data,
+                        BlockNumber = block.Header.Number,
+                        TxId = envelope.TxReqeust.Data.TxId
+                    };
                     list.Add(model);
                 }
             }

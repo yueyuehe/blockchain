@@ -88,7 +88,8 @@ namespace QMBlockClientSDK.Imp
             tx.Args = args;
             tx.FuncName = func;
             tx.ChaincodeName = chaincode;
-            return await _tx.InvokeTx(tx);
+            //return await _tx.InvokeTx(tx);
+            return await _tx.InvokeTxWaitResult(tx);
         }
 
         #endregion

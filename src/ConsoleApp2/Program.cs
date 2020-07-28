@@ -9,26 +9,13 @@ namespace ConsoleApp2
     {
         static void Main(string[] args)
         {
-            Console.WriteLine("Hello World2!");
             var factory = new ConnectionFactory() { HostName = "localhost" };
             using (var connection = factory.CreateConnection())
             using (var channel = connection.CreateModel())
             {
-                channel.ExchangeDeclare(exchange: "direct_logs",
-                                        type: "direct");
+                channel.ExchangeDeclare(exchange: "mychannel", ExchangeType.Direct, true, false, null);
                 var queueName = channel.QueueDeclare().QueueName;
-
-
-                args = new string[] { "info" };
-                foreach (var severity in args)
-                {
-                    channel.QueueBind(queue: queueName,
-                                      exchange: "direct_logs",
-                                      routingKey: severity);
-                }
-
-                Console.WriteLine(" [*] Waiting for messages.");
-
+                channel.QueueBind(queueName,exchange: "mychannel", "xxxx-xasdwa-sadwawd");
                 var consumer = new EventingBasicConsumer(channel);
                 consumer.Received += (model, ea) =>
                 {
@@ -38,10 +25,7 @@ namespace ConsoleApp2
                     Console.WriteLine(" [x] Received '{0}':'{1}'",
                                           routingKey, message);
                 };
-                channel.BasicConsume(queue: queueName,
-                                     autoAck: true,
-                                     consumer: consumer);
-
+                channel.BasicConsume(queue: queueName,autoAck: true,consumer: consumer);
                 Console.WriteLine(" Press [enter] to exit.");
                 Console.ReadLine();
             }

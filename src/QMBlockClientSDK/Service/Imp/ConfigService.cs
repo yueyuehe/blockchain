@@ -13,31 +13,38 @@ namespace QMBlockClientSDK.Service.Imp
 {
     public class ConfigService : IConfigService
     {
-        private readonly IGrpcClient _client;
+        //private readonly IGrpcClient _client;
+        private readonly ITxService _service;
 
-        public ConfigService(IGrpcClient client)
+        public ConfigService(ITxService service)
         {
-            _client = client;
+            _service = service;
         }
 
         public async Task<TxResponse> InitChannel(string channelId)
         {
-            var tx = new QMBlockSDK.TX.TxHeader();
-            tx.ChannelId = channelId;
-            tx.Type = TxType.Invoke;
-            tx.FuncName = QMBlockSDK.CC.ConfigKey.InitChannelFunc;
-            tx.ChaincodeName = QMBlockSDK.CC.ConfigKey.SysNetConfigChaincode;
-            return await _client.TxInvoke(tx);
+            var tx = new QMBlockSDK.TX.TxHeader
+            {
+                ChannelId = channelId,
+                Type = TxType.Invoke,
+                FuncName = QMBlockSDK.CC.ConfigKey.InitChannelFunc,
+                ChaincodeName = QMBlockSDK.CC.ConfigKey.SysNetConfigChaincode
+            };
+            return await _service.InvokeTx(tx);
+            //return await _client.TxInvoke(tx);
         }
 
         public async Task<TxResponse> JoinChannel(string channelId)
         {
-            var tx = new QMBlockSDK.TX.TxHeader();
-            tx.ChannelId = channelId;
-            tx.Type = TxType.Invoke;
-            tx.FuncName = QMBlockSDK.CC.ConfigKey.JoinChannelFunc;
-            tx.ChaincodeName = QMBlockSDK.CC.ConfigKey.SysNetConfigChaincode;
-            return await _client.TxInvoke(tx);
+            var tx = new QMBlockSDK.TX.TxHeader
+            {
+                ChannelId = channelId,
+                Type = TxType.Invoke,
+                FuncName = QMBlockSDK.CC.ConfigKey.JoinChannelFunc,
+                ChaincodeName = QMBlockSDK.CC.ConfigKey.SysNetConfigChaincode
+            };
+            return await _service.InvokeTx(tx);
+            //return await _client.TxInvoke(tx);
         }
 
         public async Task<TxResponse> AddOrg(string channelid, OrgConfig config)
@@ -65,13 +72,16 @@ namespace QMBlockClientSDK.Service.Imp
                 throw new Exception("证书校验不通过");
             }
 
-            var txHeader = new TxHeader();
-            txHeader.Args = new string[] { Newtonsoft.Json.JsonConvert.SerializeObject(config) };
-            txHeader.ChaincodeName = ConfigKey.SysNetConfigChaincode;
-            txHeader.FuncName = ConfigKey.AddOrgFunc;
-            txHeader.Type = TxType.Invoke;
-            txHeader.ChannelId = channelid;
-            return await _client.TxInvoke(txHeader);
+            var txHeader = new TxHeader
+            {
+                Args = new string[] { Newtonsoft.Json.JsonConvert.SerializeObject(config) },
+                ChaincodeName = ConfigKey.SysNetConfigChaincode,
+                FuncName = ConfigKey.AddOrgFunc,
+                Type = TxType.Invoke,
+                ChannelId = channelid
+            };
+            return await _service.InvokeTx(txHeader);
+            //return await _client.TxInvoke(txHeader);
         }
 
         public Task<TxResponse> AddOrgMember(OrgMemberConfig config)
@@ -81,19 +91,24 @@ namespace QMBlockClientSDK.Service.Imp
 
         public async Task<TxResponse> InstallChaincode(string channelId, ChaincodeModel config)
         {
-            var txHeader = new TxHeader();
-            txHeader.Args = new string[] { config.Name, config.Namespace, config.Version, config.Policy };
-            txHeader.ChaincodeName = ConfigKey.SysCodeLifeChaincode;
-            txHeader.FuncName = ConfigKey.InstallChaincodeFunc;
-            txHeader.ChannelId = channelId;
-            return await _client.TxInvoke(txHeader);
+            var txHeader = new TxHeader
+            {
+                Args = new string[] { config.Name, config.Namespace, config.Version, config.Policy },
+                ChaincodeName = ConfigKey.SysCodeLifeChaincode,
+                FuncName = ConfigKey.InstallChaincodeFunc,
+                ChannelId = channelId
+            };
+            return await _service.InvokeTx(txHeader);
+            //return await _client.TxInvoke(txHeader);
         }
 
         public async Task<TxResponse> InitChaincode(string channelId, string chaincodeName, string[] args)
         {
             var txHeader = new TxHeader();
-            var list = new List<string>();
-            list.Add(chaincodeName);
+            var list = new List<string>
+            {
+                chaincodeName
+            };
             foreach (var item in args)
             {
                 list.Add(item);
@@ -104,7 +119,8 @@ namespace QMBlockClientSDK.Service.Imp
             txHeader.FuncName = ConfigKey.InitChaincodeFunc;
             txHeader.Type = TxType.Invoke;
             txHeader.ChannelId = channelId;
-            return await _client.TxInvoke(txHeader);
+            return await _service.InvokeTx(txHeader);
+            //return await _client.TxInvoke(txHeader);
         }
 
     }
