@@ -1,4 +1,5 @@
-﻿using Microsoft.Extensions.Logging;
+﻿using Microsoft.Extensions.Caching.Memory;
+using Microsoft.Extensions.Logging;
 using QMBlockSDK.Idn;
 using QMBlockSDK.Ledger;
 using QMBlockSDK.TX;
@@ -20,24 +21,27 @@ namespace QMRaftCore.QMProvider.Imp
     {
         private readonly List<Envelope> _txList;
         private readonly Timer _timer;
+        //交易锁
         private readonly object obj = new object();
+        //打包锁
         private readonly object packing = new object();
         private readonly IBlockDataManager _blockDataManager;
         private readonly INode _node;
         private readonly IConfigProvider _configProvider;
-        //private readonly Dictionary<string, bool> _txStatus;
         private readonly ILogger<TxPool> _log;
+        private readonly IMemoryCache _memoryCache;
+
 
         public TxPool(ILoggerFactory logfactory, IConfigProvider configProvider,
-          IBlockDataManager blockDataManager, INode node)
+          IBlockDataManager blockDataManager, INode node, IMemoryCache memoryCache)
         {
+            _memoryCache = memoryCache;
             _log = logfactory.CreateLogger<TxPool>();
             _configProvider = configProvider;
             _txList = new List<Envelope>();
             _timer = new Timer(ResetElectionTimer, null, _configProvider.GetBatchTimeout(), _configProvider.GetBatchTimeout());
             _blockDataManager = blockDataManager;
             _node = node;
-            //_txStatus = new Dictionary<string, bool>();
         }
 
         private void ResetElectionTimer(object x)
@@ -45,29 +49,27 @@ namespace QMRaftCore.QMProvider.Imp
             BlockPacking();
         }
 
-        public Task AddAsync(Envelope tx)
+        public void Add(Envelope tx)
         {
-            return Task.Run(() =>
+            lock (obj)
             {
-                try
+                _txList.Add(tx);
+            }
+            //0是未处理的交易
+            //缓存状态 10 分钟过期
+            _memoryCache.Set("tx_" + tx.TxReqeust.Data.TxId, "0", new DateTimeOffset(DateTime.Now, TimeSpan.FromMinutes(10)));
+            if (_txList.Count() >= _configProvider.GetMaxTxCount())
+            {
+                Task.Run(() =>
                 {
-                    lock (obj)
-                    {
-                        _txList.Add(tx);
-                        //判断交易数量
-                    }
-                    if (_txList.Count() >= _configProvider.GetMaxTxCount())
-                    {
-                        BlockPacking();
-                    }
-                }
-                catch (Exception ex)
-                {
-                    _log.LogError(ex, ex.Message);
-                }
-            });
+                    BlockPacking();
+                });
+            }
         }
 
+        /// <summary>
+        /// 打包
+        /// </summary>
         private void BlockPacking()
         {
             try
@@ -88,15 +90,15 @@ namespace QMRaftCore.QMProvider.Imp
                     }
 
                     #region 组装区块数据
-                    var txmq = new Msg.Imp.TxMQ(_configProvider.GetMQSetting());
+                    //var txmq = new Msg.Imp.TxMQ(_configProvider.GetMQSetting());
 
                     var currentBlock = _blockDataManager.GetLastBlock(_node.GetChannelId());
                     var block = new Block();
                     block.Signer.Identity = _configProvider.GetPeerIdentity().GetPublic();
                     //交易验证
-                    data = Validate(data, out List<Envelope> errorTx);
+                    data = Validate(data);
                     //错误交易发送
-                    txmq.PublishTxResponse(errorTx, "交易失败");
+                    //txmq.PublishTxResponse(errorTx, "交易失败");
 
                     block.Data.Envelopes = data;
                     block.Header.Timestamp = DateTime.Now.Ticks;
@@ -132,14 +134,20 @@ namespace QMRaftCore.QMProvider.Imp
                     #endregion
 
                     #region 上链结果消息发送
-                    if (ts.Success)
+
+                    foreach (var item in block.Data.Envelopes)
                     {
-                        txmq.PublishTxResponse(block, null);
+                        _memoryCache.Set("tx_" + item.TxReqeust.Data.TxId, ts.Success ? "1" : "2", TimeSpan.FromMinutes(10));
                     }
-                    else
-                    {
-                        txmq.PublishTxResponse(block, ts.Message);
-                    }
+
+                    //if (ts.Success)
+                    //{
+                    //    //txmq.PublishTxResponse(block, null);
+                    //}
+                    //else
+                    //{
+                    //    //txmq.PublishTxResponse(block, ts.Message);
+                    //}
                     /*
                     if (ts.Success)
                     {
@@ -171,7 +179,12 @@ namespace QMRaftCore.QMProvider.Imp
             }
         }
 
-        private List<Envelope> Validate(List<Envelope> data, out List<Envelope> errTx)
+        /// <summary>
+        /// 交易验证
+        /// </summary>
+        /// <param name="data"></param>
+        /// <returns></returns>
+        private List<Envelope> Validate(List<Envelope> data)
         {
             //初始化世界状态的值
             var wordState = new Dictionary<string, long>();
@@ -195,8 +208,7 @@ namespace QMRaftCore.QMProvider.Imp
                 }
             }
             var rightTx = new List<Envelope>();
-            //var errTx = new List<Envelope>();
-            errTx = new List<Envelope>();
+            //errTx = new List<Envelope>();
             foreach (var item in data)
             {
                 var tx = true;
@@ -226,7 +238,8 @@ namespace QMRaftCore.QMProvider.Imp
                 else
                 {
                     //_txStatus.Add(item.TxReqeust.Data.TxId, false);
-                    errTx.Add(item);
+                    //errTx.Add(item);
+                    _memoryCache.Set("tx_" + item.TxReqeust.Data.TxId, "2", new DateTimeOffset(DateTime.Now, TimeSpan.FromMinutes(10)));
                 }
             }
 
@@ -259,6 +272,10 @@ namespace QMRaftCore.QMProvider.Imp
             }
         }
 
+
+        /// <summary>
+        /// 开始捕获交易
+        /// </summary>
         public void StartCacheTx()
         {
             if (_timer != null)
@@ -268,46 +285,29 @@ namespace QMRaftCore.QMProvider.Imp
         }
 
 
-        /*
         /// <summary>
-        /// 获取tx的状态 0  上链成功  1上链失败 2超时
-        /// </summary>
+        /// 0 等待上链 1上链成功,2 上链失败 
+        /// </summary> 
         /// <param name="txId"></param>
         /// <returns></returns>
-        internal async Task<string> TxStatus(string txId)
+        public string GetTxStatus(string txId)
         {
-            return await Task.Run<string>(() =>
-             {
-                 try
-                 {
-                     var count = 0;
-                     while (true)
-                     {
-                         if (_txStatus.ContainsKey(txId))
-                         {
-                             var rs = _txStatus[txId] == true ? "0" : "1";
-                             _txStatus.Remove(txId);
-                             return rs;
-                         }
-                         else
-                         {
-                             count++;
-                             Thread.Sleep(1000);
-                             if (count > 10)
-                             {
-                                 return "2";
-                             }
-                         }
-                     }
-                 }
-                 catch (Exception ex)
-                 {
-                     _log.LogError(ex, ex.Message);
-                     return "2";
-                 }
-             });
+            var rs = _memoryCache.Get("tx_" + txId);
+            if (rs == null)
+            {
+                //获取tx
+                if (_txList.Select(p => p.TxReqeust.Data.TxId).Contains(txId))
+                {
+                    return "0";
+                }
+                else
+                {
+                    //查询交易  //如果存在返回 "1" 失败 返回 "2"
+                    return "1";
+                }
+            }
+            return rs.ToString();
         }
 
-        */
     }
 }

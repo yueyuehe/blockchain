@@ -11,26 +11,32 @@ namespace QMRaftCore.Concensus.Peers
 
     public class Peer : IPeer
     {
-        public string Id { get; set; }
+        private readonly string _id;
 
         private readonly IHttpClientFactory _httpClientFactory;
 
-        public Peer(IHttpClientFactory factory)
+        public string Id { get { return this._id; } }
+
+
+        public Peer(IHttpClientFactory factory, string id)
         {
+            _id = id;
             _httpClientFactory = factory;
         }
         public async Task<RequestVoteResponse> Request(RequestVote requestVote)
         {
             try
             {
-                var client = _httpClientFactory.CreateClient(QMRaftCore.Config.VoteHttpClientName);
-                HttpContent content = new StringContent(Newtonsoft.Json.JsonConvert.SerializeObject(requestVote));
-                content.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue("application/json");
-                var response = await client.PostAsync(this.Id + "/api/vote", content);//改成自己的
-                response.EnsureSuccessStatusCode();//用来抛异常的
-                var responseBody = await response.Content.ReadAsStringAsync();
-                var model = Newtonsoft.Json.JsonConvert.DeserializeObject<RequestVoteResponse>(responseBody);
-                return model;
+                using (var client = _httpClientFactory.CreateClient(QMRaftCore.Config.VoteHttpClientName))
+                {
+                    HttpContent content = new StringContent(Newtonsoft.Json.JsonConvert.SerializeObject(requestVote));
+                    content.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue("application/json");
+                    var response = await client.PostAsync(this.Id + "/api/vote", content);//改成自己的
+                    response.EnsureSuccessStatusCode();//用来抛异常的
+                    var responseBody = await response.Content.ReadAsStringAsync();
+                    var model = Newtonsoft.Json.JsonConvert.DeserializeObject<RequestVoteResponse>(responseBody);
+                    return model;
+                }
             }
             catch (Exception e)
             {

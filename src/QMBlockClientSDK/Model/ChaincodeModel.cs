@@ -6,6 +6,5 @@
         public string Namespace { get; set; }
         public string Version { get; set; }
         public string Policy { get; set; }
-
     }
 }

@@ -12,11 +12,11 @@ namespace QMBlockClientSDK.Service.Imp
 {
     public class TxService : ITxService
     {
-        private readonly IGrpcClient _client;
+        private readonly IRequestClient _client;
 
         private readonly ILogger<TxService> _logger;
 
-        public TxService(IGrpcClient client)
+        public TxService(IRequestClient client)
         {
             _client = client;
             //_logger = factory.CreateLogger<TxService>();
@@ -48,8 +48,6 @@ namespace QMBlockClientSDK.Service.Imp
                 return response;
             }
         }
-
-
 
 
         public async Task<TxResponse> QueryTx(TxHeader request)

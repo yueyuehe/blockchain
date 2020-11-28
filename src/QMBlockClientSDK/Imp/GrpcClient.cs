@@ -10,7 +10,7 @@ using System.Threading.Tasks;
 
 namespace QMBlockClientSDK.Imp
 {
-    public class GrpcClient : IGrpcClient
+    public class GrpcClient : IRequestClient
     {
 
         private readonly GrpcChannel _grpcChannel;

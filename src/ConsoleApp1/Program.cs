@@ -22,50 +22,8 @@ namespace ConsoleApp1
         static ServiceProvider serviceProvider = null;
         static void Main(string[] args)
         {
-            /*
-            var factory = new ConnectionFactory() { HostName = "localhost" };
-            using (var connection = factory.CreateConnection())
-            using (var channel = connection.CreateModel())
-            {
-                channel.ExchangeDeclare(exchange: "direct_logs",
-                                        type: "direct");
-
-                var severity = (args.Length > 0) ? args[0] : "info";
-                var message = (args.Length > 1)
-                              ? string.Join(" ", args.Skip(1).ToArray())
-                              : "Hello World!";
-                var i = 0;
-                while (true)
-                {
-                    var body = Encoding.UTF8.GetBytes(message + i++);
-                    channel.BasicPublish(exchange: "direct_logs",
-                                         routingKey: severity,
-                                         basicProperties: null,
-                                         body: body);
-                    Console.WriteLine(" [x] Sent '{0}':'{1}'", severity, message);
-                    System.Threading.Thread.Sleep(500);
-                }
-            }
-
-            Console.WriteLine(" Press [enter] to exit.");
-            Console.ReadLine();
-
-
-            return;
-            */
-            /*
-            var client = new MongoClient("mongodb://localhost:27017");
-            var database = client.GetDatabase("StatusDB_mychannel");
-            //database.CreateCollection("testModel");
-            var testmodel = database.GetCollection<QMBlockSDK.MongoModel.DataStatus>("datastatusdocument");
-
-            var item = testmodel.AsQueryable().Select(p => (QMBlockSDK.Config.ChannelConfig) p.Data).FirstOrDefault();
-
-
-            return;
-            */
             var guid = Guid.NewGuid().ToString();
-            var ip = "https://localhost:5000";
+            var ip = "http://localhost:6001";
             var loggerFactory = LoggerFactory.Create(builder =>
             {
                 builder
@@ -73,63 +31,18 @@ namespace ConsoleApp1
                     .AddFilter("System", LogLevel.Warning)
                     .AddFilter("LoggingConsoleApp.Program", LogLevel.Debug);
             });
-            
-            serviceProvider = new ServiceCollection()
+            serviceProvider = new ServiceCollection().AddHttpClient()
+                           .AddSingleton<ILoggerFactory>(loggerFactory)
+                           .AddLogging()
                            .AddScoped<IConfigService, ConfigService>()
                            .AddScoped<ITxService, TxService>()
                            .AddScoped<ICaService, CaService>()
                            .AddScoped<IQMClientFactory, QMClientFactory>()
-                           .AddSingleton<IGrpcClient>(p => new GrpcClient(ip, loggerFactory))
+                           .AddScoped<IRequestClient, WebApiClient>()
+                           .AddSingleton<PeerSetting>(new PeerSetting() { Url = ip })
                            .BuildServiceProvider();
             Action2();
             return;
-            //PrivateKeyInfo
-
-            var rs = RSA.Create();
-
-
-            //Console.WriteLine(rs.ExportPrivateKey(RSAKeyType.Pkcs8, true));//私钥
-            //Console.WriteLine(rs.ExportPublicKey(RSAKeyType.Pkcs8, true));//私钥
-
-            var privateKey = Convert.ToBase64String(rs.ExportPkcs8PrivateKey());
-            var publicKey = Convert.ToBase64String(rs.ExportRSAPublicKey());
-
-
-            var model = new TestModel()
-            {
-                Name = "123",
-                Age = 43,
-                Sex = false
-            };
-            var signStr = RSAHelper.SignData(privateKey, model);
-            model = new TestModel()
-            {
-                Name = "1223",
-                Sex = false,
-                Age = 43
-            };
-            var checkRs = RSAHelper.VerifyData(publicKey, model, signStr);
-
-            Console.WriteLine("RSA PKCS#1 私钥：");
-            Console.WriteLine(privateKey);
-
-            Console.WriteLine("RSA PKCS#1 公钥：");
-            Console.WriteLine(publicKey);
-
-            using (var rsa = RSA.Create())
-            {
-                byte[] keyBytes = Convert.FromBase64String(privateKey);
-                rsa.ImportPkcs8PrivateKey(keyBytes, out int bytesRead);
-                Console.WriteLine(Convert.ToBase64String(rs.ExportPkcs8PrivateKey()));
-                Console.WriteLine(Convert.ToBase64String(rs.ExportRSAPublicKey()));
-
-                var enCode = rsa.EncryptValue(Convert.FromBase64String("123"));
-
-                Console.WriteLine($"Read {bytesRead} bytes, {keyBytes.Length - bytesRead} extra byte(s) in file.");
-                RSAParameters rsaParameters = rsa.ExportParameters(true);
-                Console.WriteLine(BitConverter.ToString(rsaParameters.D));
-                Console.ReadLine();
-            }
         }
 
 

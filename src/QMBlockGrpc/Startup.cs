@@ -79,17 +79,11 @@ namespace QMBlockGrpc
 
             #endregion
 
-            var mspFile = Configuration.GetSection("peerIdentity:MspFile").Value;
             #region CA账号与节点账号
+            var mspFile = Configuration.GetSection("peerIdentity:MspFile").Value;
             var basepath = AppContext.BaseDirectory;
             var account = new UserAccount();
             //如果文件存在
-            //if (File.Exists(pkfile) && File.Exists(cafile))
-            //{
-            //    account.PrivateKey = File.ReadAllText(pkfile).Trim();
-            //    var castr = File.ReadAllText(cafile).Trim();
-            //    account.Certificate = Newtonsoft.Json.JsonConvert.DeserializeObject<Certificate>(castr);
-            //}
             var path = Path.Combine(basepath, mspFile);
             if (File.Exists(Path.Combine(basepath, mspFile)))
             {
@@ -121,7 +115,7 @@ namespace QMBlockGrpc
             var securityKey = string.IsNullOrEmpty(account.PrivateKey) ? "securityKey" : account.PrivateKey;  //configuration.GetSection("peerIdentity:privateKey").ToString();
             string name = account.Certificate == null ? "name" : account.Certificate.TBSCertificate.Subject; //configuration.GetSection("peerIdentity:name").ToString();
             services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
-                 .AddJwtBearer(options =>
+                .AddJwtBearer(options =>
                  {
                      options.TokenValidationParameters = new TokenValidationParameters
                      {
@@ -139,13 +133,14 @@ namespace QMBlockGrpc
             services.AddAuthorization();
             #endregion
 
-            services.AddScoped<NodePeer>();
             #region RabbitMQ消息队列配置
             var mq = new MQSetting();
             Configuration.GetSection("RabbitMQ").Bind(mq);
             //var mqsetting = Configuration.Get<MQSetting>( "RabbitMQ"); .Bind<MQSetting>("RabbitMQ");
             services.AddSingleton(mq);
             #endregion
+
+            services.AddScoped<NodePeer>();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -167,11 +162,9 @@ namespace QMBlockGrpc
 
             app.UseEndpoints(endpoints =>
             {
-                //endpoints.MapGrpcService<GreeterService>();
                 endpoints.MapGrpcService<AuthService>();
                 endpoints.MapGrpcService<QMBlockGrpc.Services.TxService>();
                 endpoints.MapGrpcService<QMBlockGrpc.Services.NetService>();
-
                 endpoints.MapGet("/", async context =>
                 {
                     await context.Response.WriteAsync("Communication with gRPC endpoints must be made through a gRPC client. To learn how to create a client, visit: https://go.microsoft.com/fwlink/?linkid=2086909");
@@ -179,9 +172,7 @@ namespace QMBlockGrpc
             });
             StartPeer(serviceProvider);
         }
-        public static void StartPeer(
-              IServiceProvider serviceProvider
-              )
+        public static void StartPeer(IServiceProvider serviceProvider)
         {
             //节点提供对象
             var nodepeer = serviceProvider.GetService<NodePeer>();

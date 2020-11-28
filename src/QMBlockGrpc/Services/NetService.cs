@@ -49,8 +49,6 @@ namespace QMBlockGrpc.Services
                     Data = Newtonsoft.Json.JsonConvert.SerializeObject(rs)
                 };
             }
-
-
         }
 
         //peer级别
@@ -187,5 +185,6 @@ namespace QMBlockGrpc.Services
                 };
             }
         }
+   
     }
 }

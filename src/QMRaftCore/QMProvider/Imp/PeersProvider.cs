@@ -1,7 +1,8 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.Extensions.Logging;
 using QMBlockSDK.CC;
 using QMBlockSDK.Config;
 using QMRaftCore.Concensus.Peers;
+using QMRaftCore.Data.Imp;
 using QMRaftCore.Infrastructure;
 using System.Collections.Generic;
 using System.Linq;
@@ -12,49 +13,48 @@ namespace QMRaftCore.QMProvider.Imp
     public class PeersProvider : IPeersProvider
     {
         private readonly IHttpClientFactory _clientFactory;
-        private readonly DbContextOptions<BlockContext> _options;
-
-        public PeersProvider(DbContextOptions<BlockContext> options, IHttpClientFactory clientFactory)
+        private readonly DataManager _dataManager;
+        private readonly ILogger<PeersProvider> _logger;
+        private Dictionary<string, IPeer> _peerList;
+        public PeersProvider(ILoggerFactory factory, DataManager dataManager, IHttpClientFactory clientFactory)
         {
-            //_db = new BlockContext(option);
-            _options = options;
             _clientFactory = clientFactory;
+            _dataManager = dataManager;
+            _logger = factory.CreateLogger<PeersProvider>();
+            _peerList = new Dictionary<string, IPeer>();
         }
 
-        public List<IPeer> Get(string channelId)
+        //获取通道中所有节点
+        public List<IPeer> Get()
         {
-            var peers = new List<IPeer>();
-            using (var _db = new BlockContext(_options))
+            var config = _dataManager.GetChannelConfig();
+            var list = config.OrgConfigs.Select(p => p.Address).ToList();
+            var rsList = new List<IPeer>();
+            foreach (var item in list)
             {
-                var model = _db.KeyValueData.Where(p => p.ChannelId == channelId && p.Key == ConfigKey.Channel).SingleOrDefault();
-                var channelConfig = Newtonsoft.Json.JsonConvert.DeserializeObject<ChannelConfig>(model.Value);
-                var list = new List<string>();
-                foreach (var item in channelConfig.OrgConfigs)
+                //如果不存在
+                if (!_peerList.ContainsKey(item))
                 {
-                    var url = item.OrgPeer.Where(p => p.Anchor == true).Select(p => p.Url).FirstOrDefault();
-                    if (url != null)
-                    {
-                        list.Add(url);
-                    }
+                    var client = new Peer(_clientFactory, item);
+                    _peerList.Add(item, client);
                 }
-
-                foreach (var item in list)
-                {
-                    peers.Add(new Peer(_clientFactory) { Id = item });
-                }
-                return peers;
+                rsList.AddRange(_peerList.Where(p => p.Key == item).Select(p => p.Value));
             }
-
+            return rsList;
         }
 
-        public IPeer GetById(string channelid, string peerId)
+        public IPeer Get(string peerId)
         {
-            return Get(channelid).Where(p => p.Id == peerId).SingleOrDefault();
-        }
-
-        public IPeer GetByIp(string ip)
-        {
-            return new Peer(_clientFactory) { Id = ip };
+            if (_peerList.ContainsKey(peerId))
+            {
+                return _peerList[peerId];
+            }
+            else
+            {
+                var client = new Peer(_clientFactory, peerId);
+                _peerList.Add(peerId, client);
+                return _peerList[peerId];
+            }
         }
     }
 }

@@ -47,7 +47,7 @@ namespace QMBlockGrpc
             _identityProvider = identityProvider;
             _invokeBLL = invokeBLL;
         }
-     
+
         /// <summary>
         /// 获取随机字符串 用于签名校验 与 证书标识绑定
         /// </summary>

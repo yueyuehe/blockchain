@@ -51,7 +51,7 @@ namespace QMRaftCore.Data.Imp
 
         public void ApplyBlock(Block block)
         {
-            ExecuteAsync(block);
+             ExecuteAsync(block);
         }
 
         public bool CacheBlock(Block block)

@@ -77,7 +77,6 @@ namespace QMRaftCore.Concensus.Node
         Task<TxResponse> CreateNewChannel(string channelid);
 
         #region 区块扩散
-
         Task<HandOutResponse> Handle(HandOutRequest requeset);
 
         Task<HandOutResponse> BlockHandOut(Block block);

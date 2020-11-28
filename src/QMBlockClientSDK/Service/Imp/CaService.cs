@@ -10,8 +10,8 @@ namespace QMBlockClientSDK.Service.Imp
 {
     public class CaService : ICaService
     {
-        private readonly IGrpcClient _client;
-        public CaService(IGrpcClient client)
+        private readonly IRequestClient _client;
+        public CaService(IRequestClient client)
         {
             _client = client;
         }

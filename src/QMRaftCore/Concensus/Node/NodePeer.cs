@@ -10,6 +10,7 @@ using QMRaftCore.Msg.Model;
 using QMRaftCore.QMProvider;
 using System;
 using System.Collections.Generic;
+using System.Net.Http;
 using System.Threading.Tasks;
 
 namespace QMRaftCore.Concensus.Node
@@ -25,9 +26,9 @@ namespace QMRaftCore.Concensus.Node
         private readonly IStatusDatabaseSettings _statusDatabaseSettings;
         private readonly IIdentityProvider _identityProvider;
         private readonly IAssemblyProvider _assemblyProvider;
-
         private readonly MQSetting _mq;
 
+        private readonly IHttpClientFactory _clientFactory;
 
         public NodePeer(
              ILoggerFactory loggerFactory,
@@ -37,9 +38,11 @@ namespace QMRaftCore.Concensus.Node
              IStatusDatabaseSettings statusSetting,
              IAssemblyProvider assemblyProvider,
              IIdentityProvider identityProvider,
-             MQSetting mq
+             MQSetting mq,
+             IHttpClientFactory httpClientFactory
             )
         {
+            _clientFactory = httpClientFactory;
             _mq = mq;
             _identityProvider = identityProvider;
             _assemblyProvider = assemblyProvider;
@@ -116,7 +119,7 @@ namespace QMRaftCore.Concensus.Node
             }
 
             var nodeDataManager = new DataManager(channelid, _memoryCache, _blockDatabaseSetting, _historyDatabaseSettings, _statusDatabaseSettings);
-            var node = new Node(channelid, _loggerFactory, _assemblyProvider, _identityProvider, nodeDataManager, _mq);
+            var node = new Node(channelid, _loggerFactory, _assemblyProvider, _identityProvider, nodeDataManager, _mq, _clientFactory, _memoryCache);
             var url = _identityProvider.GetPeerIdentity().Address;
             node.Start(new NodeId(url));
             _nodes.Add(channelid, node);
@@ -147,7 +150,7 @@ namespace QMRaftCore.Concensus.Node
         public async Task<TxResponse> InitChannel(string channelId)
         {
             var nodeDataManager = new DataManager(channelId, _memoryCache, _blockDatabaseSetting, _historyDatabaseSettings, _statusDatabaseSettings);
-            var node = new Node(channelId, _loggerFactory, _assemblyProvider, _identityProvider, nodeDataManager, _mq);
+            var node = new Node(channelId, _loggerFactory, _assemblyProvider, _identityProvider, nodeDataManager, _mq, _clientFactory, _memoryCache);
             var rs = await node.CreateNewChannel(channelId);
             if (rs.Status)
             {

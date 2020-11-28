@@ -11,7 +11,6 @@
     <Compile Remove="Infrastructure\InMemoryPeersProvider.cs" />
     <Compile Remove="Log\ILog.cs" />
     <Compile Remove="Log\InMemoryLog.cs" />
-    <Compile Remove="QMProvider\Imp\PeersProvider.cs" />
   </ItemGroup>
 
   <ItemGroup>

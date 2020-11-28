@@ -15,7 +15,7 @@ namespace QMRaftCore.QMProvider.Imp
     /// </summary>
     public class ConfigProvider : IConfigProvider
     {
-        //private readonly IAssemblyProvider _assemblyProvider;
+        private readonly IAssemblyProvider _assemblyProvider;
         private readonly IPolicyProvider _policyProvider;
         private readonly ISettings _settings;
         private readonly IIdentityProvider _identityProvider;
@@ -30,7 +30,7 @@ namespace QMRaftCore.QMProvider.Imp
             MQSetting mQSetting)
         {
             _settings = new InMemorySettings();
-            //_assemblyProvider = assemblyProvider;
+            _assemblyProvider = assemblyProvider;
             _identityProvider = identityProvider;
             _policyProvider = policyProvider;
             _peersProvider = peersProvider;

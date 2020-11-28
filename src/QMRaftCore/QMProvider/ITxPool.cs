@@ -5,7 +5,8 @@ namespace QMRaftCore.QMProvider
 {
     public interface ITxPool
     {
-        Task AddAsync(Envelope tx);
+        void Add(Envelope tx);
 
+        string GetTxStatus(string txid);
     }
 }

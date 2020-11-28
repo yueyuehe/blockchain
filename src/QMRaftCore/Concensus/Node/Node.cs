@@ -1,3 +1,4 @@
+using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
 using QMBlockSDK.CC;
 using QMBlockSDK.Helper;
@@ -14,6 +15,7 @@ using QMRaftCore.Msg.Model;
 using QMRaftCore.QMProvider;
 using QMRaftCore.QMProvider.Imp;
 using System;
+using System.Net.Http;
 using System.Threading.Tasks;
 
 namespace QMRaftCore.Concensus.Node
@@ -27,7 +29,8 @@ namespace QMRaftCore.Concensus.Node
         private readonly StateProvider _stateprovider;
         private readonly string _channelId;
         private readonly DataManager _dataManager;
-        
+        private readonly IMemoryCache _memoryCache;
+
         private readonly MQSetting _mq;
 
         public Node(
@@ -36,22 +39,30 @@ namespace QMRaftCore.Concensus.Node
             IAssemblyProvider assemblyProvider,
             IIdentityProvider identityProvider,
             DataManager dataManager,
-            MQSetting mQSetting
+            MQSetting mQSetting,
+            IHttpClientFactory clientFactory,
+            IMemoryCache memoryCache
             )
         {
+            _memoryCache = memoryCache;
             _mq = mQSetting;
             _channelId = channelId;
             _dataManager = dataManager;
             _loggerFactory = loggerFactory;
             _logger = _loggerFactory.CreateLogger<Node>();
 
+            //链码执行器
             _chainCodeExecutor = new ChainCodeExecutor(assemblyProvider, identityProvider, _dataManager);
-
-            var peerProvider = new GrpcPeerProvider(loggerFactory, dataManager);
+            //节点通讯提供者
+            //var peerProvider = new GrpcPeerProvider(loggerFactory, dataManager);
+            var peerProvider = new PeersProvider(loggerFactory, dataManager, clientFactory);
+            //背书策略提供者
             var policeProvider = new PolicyProvider(loggerFactory, identityProvider, peerProvider, dataManager);
-
-            _configProvider = new ConfigProvider(assemblyProvider, policeProvider, identityProvider, peerProvider,_mq);
-            TxPool = new TxPool(loggerFactory, _configProvider, _dataManager, this);
+            //配置提供
+            _configProvider = new ConfigProvider(assemblyProvider, policeProvider, identityProvider, peerProvider, _mq);
+            //交易池
+            TxPool = new TxPool(loggerFactory, _configProvider, _dataManager, this, _memoryCache);
+            //节点状态
             _stateprovider = new StateProvider(_configProvider, this, _loggerFactory, _dataManager);
         }
 

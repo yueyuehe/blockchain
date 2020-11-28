@@ -3,8 +3,6 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 16
 VisualStudioVersion = 16.0.29409.12
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "QMPeer", "QMPeer\QMPeer.csproj", "{51127E7D-380F-45DF-BFBB-B866F18D43BB}"
-EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "QMRaftCore", "QMRaftCore\QMRaftCore.csproj", "{3650748E-F433-48CB-BD22-489BBF58BE77}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "QMBlockUtils", "QMBlockUtils\QMBlockUtils.csproj", "{9CC327CC-76B0-4E4C-9A92-78D40B66E3B0}"
@@ -21,7 +19,11 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "QMBlockClientSDK", "QMBlock
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ConsoleApp1", "ConsoleApp1\ConsoleApp1.csproj", "{B1BDE0E6-C4D8-4ADA-9C75-9F687FCF46D9}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ConsoleApp2", "ConsoleApp2\ConsoleApp2.csproj", "{2A3B11E0-6DCF-48F5-B723-B31C8CB20E54}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ConsoleApp2", "ConsoleApp2\ConsoleApp2.csproj", "{2A3B11E0-6DCF-48F5-B723-B31C8CB20E54}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "WebApplication2", "WebApplication2\WebApplication2.csproj", "{8E3EAEF1-FFA2-4EB7-BFFD-48F5C3D2203A}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "QM.Block.WebPeer", "QM.Block.WebPeer\QM.Block.WebPeer.csproj", "{76B2DFFA-17A2-4477-B727-DF9F109219E1}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -29,10 +31,6 @@ Global
 		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{51127E7D-380F-45DF-BFBB-B866F18D43BB}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{51127E7D-380F-45DF-BFBB-B866F18D43BB}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{51127E7D-380F-45DF-BFBB-B866F18D43BB}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{51127E7D-380F-45DF-BFBB-B866F18D43BB}.Release|Any CPU.Build.0 = Release|Any CPU
 		{3650748E-F433-48CB-BD22-489BBF58BE77}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{3650748E-F433-48CB-BD22-489BBF58BE77}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{3650748E-F433-48CB-BD22-489BBF58BE77}.Release|Any CPU.ActiveCfg = Release|Any CPU
@@ -69,6 +67,14 @@ Global
 		{2A3B11E0-6DCF-48F5-B723-B31C8CB20E54}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{2A3B11E0-6DCF-48F5-B723-B31C8CB20E54}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{2A3B11E0-6DCF-48F5-B723-B31C8CB20E54}.Release|Any CPU.Build.0 = Release|Any CPU
+		{8E3EAEF1-FFA2-4EB7-BFFD-48F5C3D2203A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{8E3EAEF1-FFA2-4EB7-BFFD-48F5C3D2203A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{8E3EAEF1-FFA2-4EB7-BFFD-48F5C3D2203A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{8E3EAEF1-FFA2-4EB7-BFFD-48F5C3D2203A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{76B2DFFA-17A2-4477-B727-DF9F109219E1}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{76B2DFFA-17A2-4477-B727-DF9F109219E1}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{76B2DFFA-17A2-4477-B727-DF9F109219E1}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{76B2DFFA-17A2-4477-B727-DF9F109219E1}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

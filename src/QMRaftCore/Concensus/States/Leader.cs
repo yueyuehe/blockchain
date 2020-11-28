@@ -411,7 +411,7 @@ namespace QMRaftCore.Concensus.States
                 }
 
                 //交易加入交易池中
-                _ = _node.TxPool.AddAsync(envelopr);
+                _node.TxPool.Add(envelopr);
                 return new TxResponse() { Status = true, Msg = "等待上链", TxId = request.Data.TxId };
                 /*
                 //var statusRs = await _node.TxPool.TxStatus(envelopr.TxReqeust.Data.TxId);
