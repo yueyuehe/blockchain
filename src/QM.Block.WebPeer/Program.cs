@@ -22,7 +22,6 @@ namespace QM.Block.WebPeer
             var config = new ConfigurationBuilder()
             .AddJsonFile("hostsettings.json", optional: true)
             .Build();
-
             return Host.CreateDefaultBuilder(args)
                      .ConfigureWebHostDefaults(webBuilder =>
                      {

@@ -12,7 +12,6 @@ namespace QMRaftCore.Data
     /// </summary>
     public interface IFiniteStateMachine
     {
-
         Task ExecuteAsync(Block block, IClientSessionHandle db = null);
 
         ChannelConfig GetChannelConfig();

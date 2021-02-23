@@ -16,7 +16,6 @@ namespace QMBlockUtils
                 StringBuilder sb = new StringBuilder();
                 return Convert.ToBase64String(newBuffer);
             }
-
         }
 
         /// <summary>
@@ -32,8 +31,6 @@ namespace QMBlockUtils
                 return new string[] { privateKey, publicKey };
             }
         }
-
-
 
         /// <summary>
         /// 使用RSA实现加密

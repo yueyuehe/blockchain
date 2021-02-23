@@ -7,7 +7,6 @@ namespace QMBlockSDK.CC
 {
     public interface IChaincodeStub
     {
-
         String GetTxRequestHeaderSignature();
         TxType GetTxType();
         string[] GetArgs();

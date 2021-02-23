@@ -39,7 +39,5 @@ namespace QMBlockServer.Service.Imp
                 throw new Exception(rs.Msg);
             }
         }
-
-
     }
 }

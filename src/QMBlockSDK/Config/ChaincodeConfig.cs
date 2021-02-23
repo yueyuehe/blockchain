@@ -23,6 +23,7 @@
         public string Version { get; set; }
 
         public ChaincodeStatus Status { get; set; }
+     
         /// <summary>
         /// 背书策略 在链码初始化的时候 这些节点必须进行背书
         /// 即这些节点必须依据手动安装了链码
